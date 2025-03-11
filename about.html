@@ -1,0 +1,34 @@
+<title>ECE163 GUI Splash Page</title>
+
+The UCSC ECE163 UAV Modeling and Control GUI<br>
+<b>All copyrights reserved to Maxwell Dunne and Gabriel Elkaim, 2020</b>
+ <br>
+This code is provided "as is" for use in the UC Santa Cruz ECE163 Class. The code is for class use only, and not to be distributed beyond the class participants.
+
+The GUI was written in Python 3.8.5 and pyQT5, and should provide all of the graphical interface required to complete the class. In essence, this GUI handles all of the heavy lifting in terms of drawing the vehicle in 3-space, plotting, and handling data into and out of the various modules that the students in the class will create.
+<ul>
+    <li>Chapter2.py - Allows the students to test their coordinate frame transformations</li>
+    <li>Chapter3.py - Kinematic Simulation (object subjected to forces in a vacuum environment)</li>
+    <li>Chapter4.py - Adds in Aerodynamics and Gravitational forces to the simulation</li>
+    <li>Chapter5.py - Finds trim conditions and the ideal trim path for any fixed spiral</li>
+    <li>Chapter6.py - Takes linearized model and closes the loop using successive loop closure</li>
+    <li>Chapter7.py - Adds in sensor values and plotting to Chapter 6</li>
+    <li>Chapter8.py - Adds in Estimators and closes the loop using estimated states</li>
+</ul>
+
+If you have a <b>joystick controller</b> attached to your machine, then you will use that input rather than the sliders for controlling the simulation. The joystick must be configured for correct axes and buttons that are in the joystick constants file. You will need
+to define the axes for throttle, elevator, aileron, and rudder as well as the trigger and mode switch buttons. Note that the current code will reject your controller if it has less than 4 input axes. There is a utility inside the Utilities folder that will
+print out the values of the axes and buttons along with their indices to make this mapping easier. Note that the joystick needs to be plugged in when you run the code for it to work.
+
+Controls are only active if the trigger is held down:
+
+<ul>
+    <li>Chapter2.py - Rotations/Translations input when trigger is down, toggle-button changes between Rotations and Translations (yaw and down is throttle)</li>
+    <li>Chapter3.py - Forces/Moments input when trigger is down, toggle-button changes between Forces and Moments, note that throttle is z-axis force and moment</li>
+    <li>Chapter4.py - Joystick directly flies the plane (controls as per pilot; if you have 3-axis stick then rudder is 0 always)</li>
+    <li>Chapter5.py - No joystick inputs</li>
+    <li>Chapter6.py - Joystick sets the reference inputs to the autopilot: throttle sets airspeed, elevator sets height, and ailerons sets course</li>
+    <li>Chapter7.py - Joystick sets the reference inputs to the autopilot: throttle sets airspeed, elevator sets height, and ailerons sets course</li>
+    <li>Chapter8.py - Joystick sets the reference inputs to the autopilot: throttle sets airspeed, elevator sets height, and ailerons sets course</li>
+</ul>
+If you find bugs or flaws in this code, please send a message to the course instructors either directly via email, or post onto Piazza. We will fix them as fast as we can given the constraints of the quarter.

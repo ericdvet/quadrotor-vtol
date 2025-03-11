@@ -4,6 +4,7 @@ This file contains functions for converting between Euler angles and Direction C
 """
 
 import math
+from . import MatrixMath
 
 def euler2DCM(yaw, pitch, roll):
     """

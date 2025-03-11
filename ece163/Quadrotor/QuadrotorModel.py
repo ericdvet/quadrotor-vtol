@@ -6,8 +6,9 @@ Description: This module contains the QuadrotorModel class, which is a simulatio
 
 import math
 import numpy as np
-import QuadrotorPhysicalConstants 
-from Containers import States
+
+from ..Containers import States
+from . import QuadrotorPhysicalConstants
 
 class QuadrotorModel:
     def __init__(self, quad, dT = 0.01):
@@ -247,7 +248,7 @@ def modelOutputs(x):
     return sys
 
 
-TEST_HARNESS_MODE = True
+TEST_HARNESS_MODE = False
 
 if TEST_HARNESS_MODE:
 
