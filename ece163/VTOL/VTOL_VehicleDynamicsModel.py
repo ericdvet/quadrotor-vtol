@@ -33,9 +33,15 @@ def quadrotor_dynamics(t, x, u, flag, quad):
     elif flag == 1:
         # Calculate derivatives
         sys = modelDerivatives(t, x, u, quad)
+        x0 = []
+        str = []
+        ts = []
     elif flag == 3:
         # Calculate outputs
-        sys = 3
+        sys = modelOutputs(t, x, quad)
+        x0 = []
+        str = []
+        ts = []
     else:
         raise NotImplementedError
     
@@ -149,28 +155,102 @@ def modelDerivatives(t, x, u, quad):
     sys = np.concatenate((dz, dn, dv, do))
     return sys
 
+def modelOutputs(t, x, quad):
+    # CRASH DETECTION
+    if x[2] > 0:
+        x[2] = 0
+        if x[5] > 0:
+            x[5] = 0
+
+    # TELEMETRY
+    if quad['verbose']:
+        print(f"{t:.3f}\t{x}")
+
+    # compute output vector as a function of state vector
+    #   z      Position                         3x1   (x,y,z)
+    #   v      Velocity                         3x1   (xd,yd,zd)
+    #   n      Attitude                         3x1   (Y,P,R)
+    #   o      Angular velocity                 3x1   (Yd,Pd,Rd)
+
+    n = x[3:6]    # RPY angles
+    phi = n[0]    # yaw
+    the = n[1]    # pitch
+    psi = n[2]    # roll
+
+    # rotz(phi)*roty(the)*rotx(psi)
+    R_Body2World = np.array([
+        [math.cos(the) * math.cos(phi), math.sin(psi) * math.sin(the) * math.cos(phi) - math.cos(psi) * math.sin(phi), math.cos(psi) * math.sin(the) * math.cos(phi) + math.sin(psi) * math.sin(phi)],
+        [math.cos(the) * math.sin(phi), math.sin(psi) * math.sin(the) * math.sin(phi) + math.cos(psi) * math.cos(phi), math.cos(psi) * math.sin(the) * math.sin(phi) - math.sin(psi) * math.cos(phi)],
+        [-math.sin(the), math.sin(psi) * math.cos(the), math.cos(psi) * math.cos(the)]
+    ])
+
+    iW = np.array([
+        [0, math.sin(psi), math.cos(psi)],
+        [0, math.cos(psi) * math.cos(the), -math.sin(psi) * math.cos(the)],
+        [math.cos(the), math.sin(psi) * math.sin(the), math.cos(psi) * math.sin(the)]
+    ]) / math.cos(the)
+
+    # return velocity in the body frame
+    sys = np.concatenate((
+        x[0:6],                         # output global pos and euler angles
+        np.linalg.inv(R_Body2World).dot(x[6:9]),  # translational velocity mapped to body frame
+        x[9:12]                         # body rates pqr
+    ))
+
+    return sys
+
+
 TEST_HARNESS_MODE = True
 
 if TEST_HARNESS_MODE:
 
-    import matplotlib as plt
+    import matplotlib.pyplot as plt
 
-    x = np.array([
-        0, 0, -0.046,   
-        0, 0, 0,     
-        0, 0, 0,      
-        0, 0, 0        
-    ])
-    u = np.array([0, 0, 0, 0])  
     dt = 0.01
     t = 0
+    x = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    u = np.array([4000, 4000, 4000, 4000])
 
-    for i in range(1000):
-        u = np.array([4000, 4000, 4000, 4000])
+    sys, x, str, ts = quadrotor_dynamics(t, x, u, 0, VTOL_VehiclePhysicalConstants.quad)
+    
+    positions = []
+    attitudes = []
 
-        sys = modelDerivatives(t, x, u, VTOL_VehiclePhysicalConstants.quad)
+    for i in range(500):
+        u = np.array([2000, 2000, 2000, 2000])
+
+        sys, x0, str, ts = quadrotor_dynamics(t, x, u, 1, VTOL_VehiclePhysicalConstants.quad)
 
         x = x + sys * dt
         t += dt
 
-        print(f"Time: {t:.2f}, Position: {x[0:3]}")
+        sys, x0, str, ts = quadrotor_dynamics(t, x, u, 3, VTOL_VehiclePhysicalConstants.quad)
+
+        positions.append(x[0:3])
+        attitudes.append(x[3:6])
+
+        print(f"Time: {t:.2f}, Position: {x[0:3]}, Attitude: {x[3:6]}")
+
+    positions = np.array(positions)
+    attitudes = np.array(attitudes)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(121, projection='3d')
+    ax.plot(positions[:, 0], positions[:, 1], abs(positions[:, 2]))  # Plotting x, y, z
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('Quadrotor Position Over Time')
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+
+    ax2 = fig.add_subplot(122)
+    ax2.plot(np.arange(0, 500*dt, dt), attitudes[:, 0], label='Yaw')
+    ax2.plot(np.arange(0, 500*dt, dt), attitudes[:, 1], label='Pitch')
+    ax2.plot(np.arange(0, 500*dt, dt), attitudes[:, 2], label='Roll')
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('Angle (rad)')
+    ax2.set_title('Yaw, Pitch, Roll Over Time')
+    ax2.legend()
+
+    plt.show()
