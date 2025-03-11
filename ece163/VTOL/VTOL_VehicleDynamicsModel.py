@@ -1,20 +1,26 @@
 """
 Author: Eric Vetha (evetha@ucsc.edu)
 
-
+Description: This module contains the QuadrotorModel class, which is a simulation of idealized X-4 Flyer II flight dynamics based upon Pounds et al. (2010). Much of the logic is inhereted from the Rolling Spider software package version 6.0.0. 
 """
 
 import math
 import numpy as np
 import VTOL_VehiclePhysicalConstants
-from ..Containers import States
+import States
 
 class QuadrotorModel:
-    """
-    something something documentation latert
-    """
-    
     def __init__(self, quad, dT = 0.01):
+        """
+        Initialization of the internal classes which are used to track the vehicle aerodynamics and dynamics.
+
+        Args:
+            quad (dict): A dictionary of quadrotor physical constants. This is defined in VTOL_VehiclePhysicalConstants.py.
+            dT (float): The time step for the simulation
+
+        Returns:
+            None
+        """
 
         self.quad = quad
         self.dT = dT
@@ -24,6 +30,18 @@ class QuadrotorModel:
         self.x = self.x0
 
     def update(self, t, x, u):
+        """
+        Function that uses the current internal state (x) and motor commands (u) to update the state of the quadrotor. 
+        
+        Args:
+            t: No clue
+            x: Also no clue
+            u (np.array 1x4): NSWE motor commands
+        
+        Returns:
+            x: The updated state of the quadrotor
+        """
+
         self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(t, x, u, 1, self.quad)
         x = x + self.sys * self.dT
         self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(t, x, u, 3, self.quad)
