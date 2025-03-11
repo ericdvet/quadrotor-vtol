@@ -10,6 +10,8 @@ import numpy as np
 from ..Containers import States
 from . import QuadrotorPhysicalConstants
 
+epsilon = 1e-6
+
 class QuadrotorModel:
     def __init__(self, quad, dT = 0.01):
         """
@@ -168,8 +170,9 @@ def modelDerivatives(x, u, quad):
     for i in [N, E, S, W]:
         Vr = np.cross(o, D[:, i]) + np.linalg.inv(R_Body2World).dot(v)
         # mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'])        # Magnitude of mu, planar components
-        mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'] + 1e-6)   # Kept getting divide by zero errors
-        lc = Vr[2] / (abs(w[i]) * quad['r'])                            # Non-dimensionalised normal inflow
+        mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'] + epsilon)   
+        # lc = Vr[2] / (abs(w[i]) * quad['r'])                            # Non-dimensionalised normal inflow
+        lc = Vr[2] / (abs(w[i]) * quad['r'] + epsilon)                    
         li = mu                                                         # Non-dimensionalised induced velocity approximation
         alphas = math.atan2(lc, mu)
         j = math.atan2(Vr[1], Vr[0])                                    # Sideslip azimuth relative to e1 (zero over nose)
@@ -179,13 +182,19 @@ def modelDerivatives(x, u, quad):
         ])
 
         # Flapping
-        beta = np.array([                                           # Longitudal flapping 
-            ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / mu - mu / 2),
+        # beta = np.array([                                           # Longitudal flapping 
+        #     ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / mu - mu / 2),
+        #     0
+        # ])
+        beta = np.array([                                               # Longitudal flapping
+            ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / (mu + epsilon) - mu / 2),
             0
-        ])
+        ])                                                              
         beta = J.T.dot(beta)                                        # sign(w) * (4/3)*((Ct/sigma)*(2*mu*gamma/3/a)/(1+3*e/2/r) + li)/(1+mu^2/2)]; %Lattitudinal flapping (note sign)
-        a1s[i] = beta[0] - 16 / quad['gamma'] / abs(w[i]) * o[1]    # Rotate the beta flapping angles to longitudinal and lateral coordinates.
-        b1s[i] = beta[1] - 16 / quad['gamma'] / abs(w[i]) * o[0]
+        # a1s[i] = beta[0] - 16 / quad['gamma'] / abs(w[i]) * o[1]    # Rotate the beta flapping angles to longitudinal and lateral coordinates.
+        a1s[i] = beta[0] + 16 / quad['gamma'] / abs(w[i] + epsilon) * o[1]  
+        # b1s[i] = beta[1] - 16 / quad['gamma'] / abs(w[i]) * o[0]
+        b1s[i] = beta[1] + 16 / quad['gamma'] / abs(w[i] + epsilon) * o[0]   
         
         # Fprces and torques
         T[:, i] = quad['Ct'] * quad['rho'] * quad['A'] * quad['r'] ** 2 * w[i] ** 2 * np.array(
@@ -246,54 +255,3 @@ def modelOutputs(x):
     ))
 
     return sys
-
-
-TEST_HARNESS_MODE = False
-
-if TEST_HARNESS_MODE:
-
-    import matplotlib.pyplot as plt
-
-    dt = 0.01
-    t = 0
-    x = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    u = np.array([4000, 4000, 4000, 4000])
-
-    quad = QuadrotorPhysicalConstants.quad
-    Quadrotor = QuadrotorModel(quad, dt)
-
-    t_hist = []
-    x_hist = []
-    u_hist = []
-
-    for i in range(500):
-        t_hist.append(t)
-        x_hist.append(x)
-        u_hist.append(u)
-
-        x = Quadrotor.update(t, x, u)
-        t += dt
-
-    x_hist = np.array(x_hist)
-    u_hist = np.array(u_hist)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(x_hist[:, 0], x_hist[:, 1], abs(x_hist[:, 2]))
-    ax.set_title('Position')
-    ax.set_xlabel('North [m]')
-    ax.set_ylabel('East [m]')
-    ax.set_zlabel('Down [m]')
-    ax.set_xlim(-1, 1)
-    ax.set_ylim(-1, 1)
-    plt.grid()
-
-    plt.figure()
-    plt.plot(t_hist, x_hist[:, 3:6])
-    plt.title('Attitude')
-    plt.legend(['Yaw', 'Pitch', 'Roll'])
-    plt.xlabel('Time [s]')
-    plt.ylabel('Angle [rad]')
-    plt.grid()
-
-    plt.show()

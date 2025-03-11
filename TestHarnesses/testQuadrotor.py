@@ -20,16 +20,39 @@ t_hist = []
 x_hist = []
 u_hist = []
 
-for i in range(500):
-    t_hist.append(t)
-    x_hist.append(x)
-    u_hist.append(u)
+TESTING_MODE = "TAKE OFF"
+# TESTING_MODE = "HOVER"
 
-    x = Quadrotor.update(t, x, u)
-    t += dt
+if TESTING_MODE == "TAKE OFF":
 
-x_hist = np.array(x_hist)
-u_hist = np.array(u_hist)
+    for i in range(200):
+        t_hist.append(t)
+        x_hist.append(x)
+        u_hist.append(u)
+
+        x = Quadrotor.update(t, x, u)
+        t += dt
+
+    x_hist = np.array(x_hist)
+    u_hist = np.array(u_hist)
+
+elif TESTING_MODE == "HOVER":
+
+    for i in range(250):
+        t_hist.append(t)
+        x_hist.append(x)
+        u_hist.append(u)
+
+        if abs(x[2]) < 0.1:
+            u = np.array([4000, 4000, 4000, 4000])
+        else:
+            u = np.array([0, 0, 0, 0])
+
+        x = Quadrotor.update(t, x, u)
+        t += dt
+
+    x_hist = np.array(x_hist)
+    u_hist = np.array(u_hist)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -48,6 +71,16 @@ plt.title('Attitude')
 plt.legend(['Yaw', 'Pitch', 'Roll'])
 plt.xlabel('Time [s]')
 plt.ylabel('Angle [rad]')
+plt.grid()
+
+plt.figure()
+plt.title("Position over time")
+plt.plot(t_hist, x_hist[:, 0], label="North")
+plt.plot(t_hist, x_hist[:, 1], label="East")
+plt.plot(t_hist, x_hist[:, 2], label="Down")
+plt.legend()
+plt.xlabel("Time [s]")
+plt.ylabel("Position [m]")
 plt.grid()
 
 plt.show()
