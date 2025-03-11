@@ -1,6 +1,4 @@
 """
-Author: Eric Vetha (evetha@ucsc.edu)
-
 Description: This module contains the QuadrotorModel class, which is a simulation of idealized X-4 Flyer II flight dynamics based upon Pounds et al. (2010). Much of the logic is inhereted from the Rolling Spider software package version 6.0.0. 
 """
 
@@ -78,9 +76,9 @@ class QuadrotorModel:
         
         return sys, x
     
-    def wrapper_vehicleState(self):
+    def getVehicleState(self):
         """
-        Converts the quadrotor state vector to a vehicleState object for use in the simulation.
+        Wrapper function to convert the quadrotor state vector to a vehicleState object for use in the simulation.
 
         Returns:
             vehicleState: A vehicleState object that represents the current state of the quadrotor.
