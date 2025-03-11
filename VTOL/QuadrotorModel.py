@@ -6,7 +6,7 @@ Description: This module contains the QuadrotorModel class, which is a simulatio
 
 import math
 import numpy as np
-import VTOL_VehiclePhysicalConstants
+import QuadrotorPhysicalConstants 
 from Containers import States
 
 class QuadrotorModel:
@@ -15,7 +15,7 @@ class QuadrotorModel:
         Initialization of the internal classes which are used to track the vehicle aerodynamics and dynamics.
 
         Args:
-            quad (dict): A dictionary of quadrotor physical constants. This is defined in VTOL_VehiclePhysicalConstants.py.
+            quad (dict): A dictionary of quadrotor physical constants. This is defined in the QuadrotorPhysicalConstants module.
             dT (float): The time step for the simulation
 
         Returns:
@@ -247,7 +247,7 @@ def modelOutputs(x):
     return sys
 
 
-TEST_HARNESS_MODE = False
+TEST_HARNESS_MODE = True
 
 if TEST_HARNESS_MODE:
 
@@ -258,7 +258,7 @@ if TEST_HARNESS_MODE:
     x = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     u = np.array([4000, 4000, 4000, 4000])
 
-    quad = VTOL_VehiclePhysicalConstants.quad
+    quad = QuadrotorPhysicalConstants.quad
     Quadrotor = QuadrotorModel(quad, dt)
 
     t_hist = []
