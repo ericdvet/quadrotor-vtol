@@ -25,72 +25,62 @@ class QuadrotorModel:
         self.quad = quad
         self.dT = dT
 
-        self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(0, np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0]), np.array([0, 0, 0, 0]), 0, self.quad)
+        self.sys = np.zeros(12)
+        x0 = np.array([0, 0, -0.046,   # z (position)
+                            0, 0, 0,        # n (angular position)
+                            0, 0, 0,        # v (velocity)
+                            0, 0, 0])       # o (angular velocity)
 
-        self.x = self.x0
+        self.x = x0
 
     def update(self, t, x, u):
         """
         Function that uses the current internal state (x) and motor commands (u) to update the state of the quadrotor. 
         
         Args:
-            t: No clue
-            x: Also no clue
-            u (np.array 1x4): NSWE motor commands
-        
+            x: The current state of the quadrotor. 
+            u: The motor commands for the quadrotor. This is a 4 element array of motor speeds in RPM (I think).
+
         Returns:
-            x: The updated state of the quadrotor
+            x: The updated state of the quadrotor.
         """
 
-        self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(t, x, u, 1, self.quad)
-        x = x + self.sys * self.dT
-        self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(t, x, u, 3, self.quad)
+        self.sys, self.x0 = self.quadrotor_dynamics(x, u, 1, self.quad)
+        x = self.x + self.sys * self.dT
+        self.sys, self.x = self.quadrotor_dynamics(x, u, 2, self.quad)
         self.x = x
         return x
 
 
-    def quadrotor_dynamics(self, t, x, u, flag, quad):
+    def quadrotor_dynamics(self, x, u, flag, quad):
         """
-        A simulation of idealized X-4 Flyer II flight dynamics based upon Pounds et al. (2010).
-        
+        This function is a wrapper for the quadrotor dynamics model. It inherits a S-function style interface from the Rolling Spider software package (which, admittedly, doesn't make a lot of sense in Python).
+
         Args:
-            t: No clue
-            x: Also no clue
-            u (np.array 1x4): NSWE motor commands
+            x: The current state of the quadrotor. This is described in the quadrotor_dynamics function.
+            u: The motor commands for the quadrotor. This is a 4 element array of motor speeds in RPM (I think).
+            flag: A flag that tells the function what to do. 0 is initialization, 1 is derivative calculation, 2 is output calculation.
+            quad: The physical constants of the quadrotor.
         """
 
-        """
-        init = [z1, z2, z3, n1, n2, n3, v1, v2, v3, o1, o2, o3]
 
-        z0      Position initial conditions             1x3
-        n0      Angular position initial conditions     1x3
-        v0      Velocity initial conditions             1x3
-        o0      Angular velocity initial conditions     1x3
-        """
-        init = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-
-        if flag == 0:
-            sys, x0, str, ts = initializeModel(init, quad)
-        elif flag == 1:
-            # Calculate derivatives
-            sys = modelDerivatives(t, x, u, quad)
-            x0 = []
-            str = []
-            ts = []
-        elif flag == 3:
-            # Calculate outputs
-            sys = modelOutputs(t, x, quad)
-            x0 = []
-            str = []
-            ts = []
-        else:
+        if flag == 1:                                         # Derivative Calculation
+            sys = modelDerivatives(x, u, quad)
+            x = []
+        elif flag == 2:                                         # Output Calculation
+            sys = modelOutputs(x)
+            x = []
+        else:                                                   # Error
             raise NotImplementedError
         
-        return sys, x0, str, ts 
+        return sys, x
     
     def wrapper_vehicleState(self):
         """
         Converts the quadrotor state vector to a vehicleState object for use in the simulation.
+
+        Returns:
+            vehicleState: A vehicleState object that represents the current state of the quadrotor.
         """
 
         vehicleState = States.vehicleState(pn = self.x[0], pe = self.x[1], pd = self.x[2], 
@@ -99,23 +89,25 @@ class QuadrotorModel:
                                            p = self.x[9], q = self.x[10], r = self.x[11])
         return vehicleState
 
-def initializeModel(init, quad):
+def modelDerivatives(x, u, quad):
+    """
+    Calculate the state derivatives for the next timestep. Inherited from the Rolling Spider software package. If it ain't broke, don't fix it.
 
-    sys = 0
-    x0 = init
-    str = np.matrix([[]])
-    ts = np.array([0, 0])
+    Args:
+        x: The current state of the quadrotor. 
+        u: The motor commands for the quadrotor. This is a 4 element array of motor speeds in RPM (I think).
+        quad: The physical constants of the quadrotor.
     
-    return sys, x0, str, ts
-
-def modelDerivatives(t, x, u, quad):
+    Returns:
+        sys: The state derivatives for the next timestep.
+    """
     
     # CONSTANTS
     # Cardinal Direction Indices
-    N = 0  # North
-    E = 1  # East
-    S = 2  # South
-    W = 3  # West
+    N = 0   # North
+    E = 1   # East
+    S = 2   # South
+    W = 3   # West
 
     d = math.sqrt(2) / 2 * quad['d']
 
@@ -126,8 +118,7 @@ def modelDerivatives(t, x, u, quad):
         [-d, -d, quad['h']]
     ]).T
 
-    # Body-fixed frame references
-    e1 = np.array([1, 0, 0])
+    e1 = np.array([1, 0, 0])        # Body-fixed frame references
     e2 = np.array([0, 1, 0])
     e3 = np.array([0, 0, 1])
 
@@ -152,12 +143,14 @@ def modelDerivatives(t, x, u, quad):
     if z[2] > 0:
         raise ValueError('z greater than 0 (below ground)!')
 
+    # R_phi @ R_the @ R_psi
     R_Body2World = np.array([
         [math.cos(the) * math.cos(phi),     math.sin(psi) * math.sin(the) * math.cos(phi) - math.cos(psi) * math.sin(phi),  math.cos(psi) * math.sin(the) * math.cos(phi) + math.sin(psi) * math.sin(phi)],
         [math.cos(the) * math.sin(phi),     math.sin(psi) * math.sin(the) * math.sin(phi) + math.cos(psi) * math.cos(phi),  math.cos(psi) * math.sin(the) * math.sin(phi) - math.sin(psi) * math.cos(phi)],
         [-math.sin(the),                    math.sin(psi) * math.cos(the),                                                  math.cos(psi) * math.cos(the)]
     ])
 
+    # Why did they divide by cos(the) here???
     iW = np.array([
         [0,             math.sin(psi),                  math.cos(psi)],
         [0,             math.cos(psi) * math.cos(the),  -math.sin(psi) * math.cos(the)],
@@ -173,80 +166,82 @@ def modelDerivatives(t, x, u, quad):
 
     for i in [N, E, S, W]:
         Vr = np.cross(o, D[:, i]) + np.linalg.inv(R_Body2World).dot(v)
-        mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'] + 1e-6) # mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'])
-        lc = Vr[2] / (abs(w[i]) * quad['r'])
-        li = mu
+        # mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'])        # Magnitude of mu, planar components
+        mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'] + 1e-6)   # Kept getting divide by zero errors
+        lc = Vr[2] / (abs(w[i]) * quad['r'])                            # Non-dimensionalised normal inflow
+        li = mu                                                         # Non-dimensionalised induced velocity approximation
         alphas = math.atan2(lc, mu)
-        j = math.atan2(Vr[1], Vr[0])
-        J = np.array([
+        j = math.atan2(Vr[1], Vr[0])                                    # Sideslip azimuth relative to e1 (zero over nose)
+        J = np.array([                                                  # BBF > mu sideslip rotation matrix               
             [math.cos(j), -math.sin(j)],
             [math.sin(j), math.cos(j)]
         ])
 
-        beta = np.array([
+        # Flapping
+        beta = np.array([                                           # Longitudal flapping 
             ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / mu - mu / 2),
             0
         ])
-        beta = J.T.dot(beta)
-        a1s[i] = beta[0] - 16 / quad['gamma'] / abs(w[i]) * o[1]
+        beta = J.T.dot(beta)                                        # sign(w) * (4/3)*((Ct/sigma)*(2*mu*gamma/3/a)/(1+3*e/2/r) + li)/(1+mu^2/2)]; %Lattitudinal flapping (note sign)
+        a1s[i] = beta[0] - 16 / quad['gamma'] / abs(w[i]) * o[1]    # Rotate the beta flapping angles to longitudinal and lateral coordinates.
         b1s[i] = beta[1] - 16 / quad['gamma'] / abs(w[i]) * o[0]
+        
+        # Fprces and torques
+        T[:, i] = quad['Ct'] * quad['rho'] * quad['A'] * quad['r'] ** 2 * w[i] ** 2 * np.array(
+            [-math.cos(b1s[i]) * math.sin(a1s[i]), math.sin(b1s[i]), -math.cos(a1s[i]) * math.cos(b1s[i])]
+            )                                                                                       # Rotor thrust, linearised angle approximations
+        Q[:, i] = -quad['Cq'] * quad['rho'] * quad['A'] * quad['r'] ** 3 * w[i] * abs(w[i]) * e3    # Rotor drag torque - note that this preserves w(i) direction sign
+        tau[:, i] = np.cross(D[:, i], T[:, i])                                                      # Torque due to rotor thrust
 
-        T[:, i] = quad['Ct'] * quad['rho'] * quad['A'] * quad['r'] ** 2 * w[i] ** 2 * np.array([-math.cos(b1s[i]) * math.sin(a1s[i]), math.sin(b1s[i]), -math.cos(a1s[i]) * math.cos(b1s[i])])
-        Q[:, i] = -quad['Cq'] * quad['rho'] * quad['A'] * quad['r'] ** 3 * w[i] * abs(w[i]) * e3
-        tau[:, i] = np.cross(D[:, i], T[:, i])
-
+    # RIGID BODY DYNAMIC MODEL
     dz = v
     dn = iW.dot(o)
-    dv = quad['g'] * e3 + R_Body2World.dot(1 / quad['M'] * np.sum(T, axis=1))
-    do = np.linalg.inv(quad['J']).dot(-np.cross(o, quad['J'].dot(o)) + np.sum(tau, axis=1) + np.sum(Q, axis=1))
 
-    if np.isnan(do).any():
-        raise ValueError('system rotating NaN!')
-        do = np.zeros_like(do)
+    dv = quad['g'] * e3 + R_Body2World.dot(1 / quad['M'] * np.sum(T, axis=1))
+    do = np.linalg.inv(quad['J']).dot(-np.cross(o, quad['J'].dot(o)) + np.sum(tau, axis=1) + np.sum(Q, axis=1))     # Row sum of torques
 
     sys = np.concatenate((dz, dn, dv, do))
     return sys
 
-def modelOutputs(t, x, quad):
+def modelOutputs(x):
+    """
+    Calculate the output vector for this timestep. Inherited from the Rolling Spider software package. Again, if it ain't broke, don't fix it.
+    
+    Args:
+        x: The current state of the quadrotor.
+    
+    Returns:
+        sys: The output vector for this timestep.
+    """
+
     # CRASH DETECTION
     if x[2] > 0:
         x[2] = 0
         if x[5] > 0:
             x[5] = 0
 
-    # TELEMETRY
-    if quad['verbose']:
-        print(f"{t:.3f}\t{x}")
-
-    # compute output vector as a function of state vector
-    #   z      Position                         3x1   (x,y,z)
-    #   v      Velocity                         3x1   (xd,yd,zd)
-    #   n      Attitude                         3x1   (Y,P,R)
-    #   o      Angular velocity                 3x1   (Yd,Pd,Rd)
-
     n = x[3:6]    # RPY angles
     phi = n[0]    # yaw
     the = n[1]    # pitch
     psi = n[2]    # roll
 
-    # rotz(phi)*roty(the)*rotx(psi)
+    # R_phi @ R_the @ R_psi
     R_Body2World = np.array([
         [math.cos(the) * math.cos(phi), math.sin(psi) * math.sin(the) * math.cos(phi) - math.cos(psi) * math.sin(phi), math.cos(psi) * math.sin(the) * math.cos(phi) + math.sin(psi) * math.sin(phi)],
         [math.cos(the) * math.sin(phi), math.sin(psi) * math.sin(the) * math.sin(phi) + math.cos(psi) * math.cos(phi), math.cos(psi) * math.sin(the) * math.sin(phi) - math.sin(psi) * math.cos(phi)],
         [-math.sin(the), math.sin(psi) * math.cos(the), math.cos(psi) * math.cos(the)]
     ])
 
-    iW = np.array([
+    iW = np.array([                             # Inverted Wronskian
         [0, math.sin(psi), math.cos(psi)],
         [0, math.cos(psi) * math.cos(the), -math.sin(psi) * math.cos(the)],
         [math.cos(the), math.sin(psi) * math.sin(the), math.cos(psi) * math.sin(the)]
     ]) / math.cos(the)
 
-    # return velocity in the body frame
     sys = np.concatenate((
-        x[0:6],                         # output global pos and euler angles
-        np.linalg.inv(R_Body2World).dot(x[6:9]),  # translational velocity mapped to body frame
-        x[9:12]                         # body rates pqr
+        x[0:6],                                     # Output global pos and euler angles
+        np.linalg.inv(R_Body2World).dot(x[6:9]),    # Translational velocity mapped to body frame
+        x[9:12]                                     # Body rates pqr
     ))
 
     return sys
