@@ -7,45 +7,79 @@ Author: Eric Vetha (evetha@ucsc.edu)
 import math
 import numpy as np
 import VTOL_VehiclePhysicalConstants
+from ..Containers import States
 
-def quadrotor_dynamics(t, x, u, flag, quad):
+class QuadrotorModel:
     """
-    A simulation of idealized X-4 Flyer II flight dynamics based upon Pounds et al. (2010).
+    something something documentation latert
+    """
     
-    Args:
-        t: No clue
-        x: Also no clue
-        u (np.array 1x4): NSWE motor commands
-    """
+    def __init__(self, quad, dT = 0.01):
 
-    """
-    init = [z1, z2, z3, n1, n2, n3, v1, v2, v3, o1, o2, o3]
+        self.quad = quad
+        self.dT = dT
 
-    z0      Position initial conditions             1x3
-    n0      Angular position initial conditions     1x3
-    v0      Velocity initial conditions             1x3
-    o0      Angular velocity initial conditions     1x3
-    """
-    init = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(0, np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0]), np.array([0, 0, 0, 0]), 0, self.quad)
 
-    if flag == 0:
-        sys, x0, str, ts = initializeModel(init, quad)
-    elif flag == 1:
-        # Calculate derivatives
-        sys = modelDerivatives(t, x, u, quad)
-        x0 = []
-        str = []
-        ts = []
-    elif flag == 3:
-        # Calculate outputs
-        sys = modelOutputs(t, x, quad)
-        x0 = []
-        str = []
-        ts = []
-    else:
-        raise NotImplementedError
+        self.x = self.x0
+
+    def update(self, t, x, u):
+        self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(t, x, u, 1, self.quad)
+        x = x + self.sys * self.dT
+        self.sys, self.x0, self.str, self.ts = self.quadrotor_dynamics(t, x, u, 3, self.quad)
+        self.x = x
+        return x
+
+
+    def quadrotor_dynamics(self, t, x, u, flag, quad):
+        """
+        A simulation of idealized X-4 Flyer II flight dynamics based upon Pounds et al. (2010).
+        
+        Args:
+            t: No clue
+            x: Also no clue
+            u (np.array 1x4): NSWE motor commands
+        """
+
+        """
+        init = [z1, z2, z3, n1, n2, n3, v1, v2, v3, o1, o2, o3]
+
+        z0      Position initial conditions             1x3
+        n0      Angular position initial conditions     1x3
+        v0      Velocity initial conditions             1x3
+        o0      Angular velocity initial conditions     1x3
+        """
+        init = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+        if flag == 0:
+            sys, x0, str, ts = initializeModel(init, quad)
+        elif flag == 1:
+            # Calculate derivatives
+            sys = modelDerivatives(t, x, u, quad)
+            x0 = []
+            str = []
+            ts = []
+        elif flag == 3:
+            # Calculate outputs
+            sys = modelOutputs(t, x, quad)
+            x0 = []
+            str = []
+            ts = []
+        else:
+            raise NotImplementedError
+        
+        return sys, x0, str, ts 
     
-    return sys, x0, str, ts 
+    def wrapper_vehicleState(self):
+        """
+        Converts the quadrotor state vector to a vehicleState object for use in the simulation.
+        """
+
+        vehicleState = States.vehicleState(pn = self.x[0], pe = self.x[1], pd = self.x[2], 
+                                           u = self.x[6], v = self.x[7], w = self.x[8], 
+                                           yaw = self.x[3], pitch = self.x[4], roll = self.x[5], 
+                                           p = self.x[9], q = self.x[10], r = self.x[11])
+        return vehicleState
 
 def initializeModel(init, quad):
 
@@ -211,46 +245,65 @@ if TEST_HARNESS_MODE:
     x = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     u = np.array([4000, 4000, 4000, 4000])
 
-    sys, x, str, ts = quadrotor_dynamics(t, x, u, 0, VTOL_VehiclePhysicalConstants.quad)
-    
-    positions = []
-    attitudes = []
+    quad = VTOL_VehiclePhysicalConstants.quad
+    Quadrotor = QuadrotorModel(quad, dt)
+
+    t_hist = []
+    x_hist = []
+    u_hist = []
 
     for i in range(500):
-        u = np.array([2000, 2000, 2000, 2000])
+        t_hist.append(t)
+        x_hist.append(x)
+        u_hist.append(u)
 
-        sys, x0, str, ts = quadrotor_dynamics(t, x, u, 1, VTOL_VehiclePhysicalConstants.quad)
-
-        x = x + sys * dt
+        x = Quadrotor.update(t, x, u)
         t += dt
 
-        sys, x0, str, ts = quadrotor_dynamics(t, x, u, 3, VTOL_VehiclePhysicalConstants.quad)
-
-        positions.append(x[0:3])
-        attitudes.append(x[3:6])
-
-        print(f"Time: {t:.2f}, Position: {x[0:3]}, Attitude: {x[3:6]}")
-
-    positions = np.array(positions)
-    attitudes = np.array(attitudes)
+    x_hist = np.array(x_hist)
+    u_hist = np.array(u_hist)
 
     fig = plt.figure()
-    ax = fig.add_subplot(121, projection='3d')
-    ax.plot(positions[:, 0], positions[:, 1], abs(positions[:, 2]))  # Plotting x, y, z
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_title('Quadrotor Position Over Time')
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x_hist[:, 0], x_hist[:, 1], abs(x_hist[:, 2]))
+    ax.set_title('Position')
+    ax.set_xlabel('North [m]')
+    ax.set_ylabel('East [m]')
+    ax.set_zlabel('Down [m]')
     ax.set_xlim(-1, 1)
     ax.set_ylim(-1, 1)
+    plt.grid()
 
-    ax2 = fig.add_subplot(122)
-    ax2.plot(np.arange(0, 500*dt, dt), attitudes[:, 0], label='Yaw')
-    ax2.plot(np.arange(0, 500*dt, dt), attitudes[:, 1], label='Pitch')
-    ax2.plot(np.arange(0, 500*dt, dt), attitudes[:, 2], label='Roll')
-    ax2.set_xlabel('Time (s)')
-    ax2.set_ylabel('Angle (rad)')
-    ax2.set_title('Yaw, Pitch, Roll Over Time')
-    ax2.legend()
+    plt.figure()
+    plt.plot(t_hist, x_hist[:, 3:6])
+    plt.title('Attitude')
+    plt.legend(['Yaw', 'Pitch', 'Roll'])
+    plt.xlabel('Time [s]')
+    plt.ylabel('Angle [rad]')
+    plt.grid()
+
+    # plt.figure()
+    # plt.plot(t_hist, x_hist[:, 6:9])
+    # plt.title('Velocity')
+    # plt.legend(['North', 'East', 'Down'])
+    # plt.xlabel('Time [s]')
+    # plt.ylabel('Velocity [m/s]')
+    # plt.grid()
+
+    # plt.figure()
+    # plt.plot(t_hist, x_hist[:, 9:12])
+    # plt.title('Angular Velocity')
+    # plt.legend(['Yaw', 'Pitch', 'Roll'])
+    # plt.xlabel('Time [s]')
+    # plt.ylabel('Angular Velocity [rad/s]')
+    # plt.grid()
+
+    # plt.figure()
+    # plt.plot(t_hist, u_hist)
+    # plt.title('Motor Commands')
+    # plt.legend(['North', 'East', 'South', 'West'])
+    # plt.xlabel('Time [s]')
+    # plt.ylabel('Motor Command [rpm]')
+    # plt.grid()
 
     plt.show()
