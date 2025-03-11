@@ -4,13 +4,13 @@ import sys
 import PyQt5.QtCore as QtCore
 import PyQt5.QtWidgets as QtWidgets
 
-import ece163.Display.baseInterface as baseInterface
-import ece163.Containers.States as vehicleState
-import ece163.Display.GridVariablePlotter
-import ece163.Display.SliderWithValue
+import Display as baseInterface
+import Containers.States as vehicleState
+import Display.GridVariablePlotter
+import Display.SliderWithValue
 
-from ece163.Utilities.Joystick import Joystick
-import ece163.Constants.JoystickConstants as JSC
+from Utilities.Joystick import Joystick
+import Constants.JoystickConstants as JSC
 
 stateNamesofInterest = ['pn', 'pe', 'pd', 'yaw', 'pitch', 'roll']
 
@@ -23,7 +23,7 @@ class testInterface(baseInterface.baseInterface):
 		self.vehicleState = vehicleState.vehicleState()
 		self.t = 0
 		super().__init__(parent)
-		self.stateGrid = ece163.Display.GridVariablePlotter.GridVariablePlotter(2, 3, [[x] for x in stateNamesofInterest], titles=stateNamesofInterest)
+		self.stateGrid = Display.GridVariablePlotter.GridVariablePlotter(2, 3, [[x] for x in stateNamesofInterest], titles=stateNamesofInterest)
 
 		self.outPutTabs.addTab(self.stateGrid, "States")
 		self.outPutTabs.setCurrentIndex(2)
@@ -51,9 +51,9 @@ class testInterface(baseInterface.baseInterface):
 			col = index % 3
 			# print(row, col)
 			if self.joystick.active:
-				newSlider = ece163.Display.SliderWithValue.SliderWithValue(value, minValue, maxValue, onChangePointer=None)
+				newSlider = Display.SliderWithValue.SliderWithValue(value, minValue, maxValue, onChangePointer=None)
 			else:
-				newSlider = ece163.Display.SliderWithValue.SliderWithValue(value, minValue, maxValue, onChangePointer=self.sliderChangeResponse)
+				newSlider = Display.SliderWithValue.SliderWithValue(value, minValue, maxValue, onChangePointer=self.sliderChangeResponse)
 			self.inputSliders.append(newSlider)
 			self.inputGrid.addWidget(newSlider, row, col)
 

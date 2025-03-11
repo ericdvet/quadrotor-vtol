@@ -247,7 +247,7 @@ def modelOutputs(x):
     return sys
 
 
-TEST_HARNESS_MODE = True
+TEST_HARNESS_MODE = False
 
 if TEST_HARNESS_MODE:
 
@@ -294,29 +294,5 @@ if TEST_HARNESS_MODE:
     plt.xlabel('Time [s]')
     plt.ylabel('Angle [rad]')
     plt.grid()
-
-    # plt.figure()
-    # plt.plot(t_hist, x_hist[:, 6:9])
-    # plt.title('Velocity')
-    # plt.legend(['North', 'East', 'Down'])
-    # plt.xlabel('Time [s]')
-    # plt.ylabel('Velocity [m/s]')
-    # plt.grid()
-
-    # plt.figure()
-    # plt.plot(t_hist, x_hist[:, 9:12])
-    # plt.title('Angular Velocity')
-    # plt.legend(['Yaw', 'Pitch', 'Roll'])
-    # plt.xlabel('Time [s]')
-    # plt.ylabel('Angular Velocity [rad/s]')
-    # plt.grid()
-
-    # plt.figure()
-    # plt.plot(t_hist, u_hist)
-    # plt.title('Motor Commands')
-    # plt.legend(['North', 'East', 'South', 'West'])
-    # plt.xlabel('Time [s]')
-    # plt.ylabel('Motor Command [rpm]')
-    # plt.grid()
 
     plt.show()
