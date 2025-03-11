@@ -7,7 +7,7 @@ Description: This module contains the QuadrotorModel class, which is a simulatio
 import math
 import numpy as np
 import VTOL_VehiclePhysicalConstants
-import States
+from Containers import States
 
 class QuadrotorModel:
     def __init__(self, quad, dT = 0.01):

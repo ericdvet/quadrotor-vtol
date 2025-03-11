@@ -1,5 +1,11 @@
-import Rotations
-import MatrixMath
+import sys
+
+import sys
+sys.path.append("..") #python is horrible, no?\
+
+from Utilities import MatrixMath
+from Utilities import Rotations
+
 import math
 
 testingAbs_tol = 1e-6
