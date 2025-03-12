@@ -5,8 +5,37 @@ Author:
 import numpy as np
 from . import QuadrotorModel
 import matplotlib.pyplot as plt
+from . import QuadrotorPhysicalConstants as QPC
 
-takeoff_flag = False # ofc there's a takeoff flag
+takeoff_flag = False # Not using this
+
+# Tuning parameters
+
+# Yaw Controller
+P_yaw = 0.004
+D_yaw = 0.3 * 0.004
+
+# Altitude Controller
+P_z = -0.8
+D_z = -0.3
+totalThrustMaxRelative = 0.920000000000000
+motorsThrustPerMotorMax = 0.326642213351703
+
+# Attitude Controller
+P_pr = np.array([0.013, 0.01])
+I_pr = 0.01
+D_pr = np.array([0.002, 0.0028])
+antiWU_Gain = 0.001  
+
+# idk 
+P_xy = np.array([-0.24, 0.24])
+D_xy = np.array([0.1, -0.1])
+
+# Control Mixer
+thrustToMotorCommand = 1530.7
+maxLimit = 500
+minLimit = 10
+motorDirections = np.array([1, -1, 1, -1])
 
 # So this should take in reference values and state estimations (truth for us)
 # and output
@@ -29,6 +58,9 @@ class FlightControllerSystem():
         self.velocity_ref = ref[6:9]
         self.angular_velocity_ref = ref[9:12]
 
+        self.prev_pitch_roll_error = np.zeros(2)
+        self.prev_integralComponent = np.zeros(2)
+
         self.Scope = Scope
         if self.Scope:
             self.control_hist = []
@@ -42,23 +74,13 @@ class FlightControllerSystem():
         yaw_state = self.attitude_state[0]
         yaw_dot_state = self.angular_velocity_state[0]
 
-
-        P_yaw = 0.004           # unhard code these
-        D_yaw = 0.3 * 0.004
-
         tau_yaw = P_yaw * (yaw_ref - yaw_state) - D_yaw * yaw_dot_state
-
-        print("Yaw", yaw_ref)
-        print("Yaw State", yaw_state)
-        print("Yaw Dot State", yaw_dot_state)
-        print("Tau Yaw", tau_yaw)
-        print()
 
         return tau_yaw
 
     def Rotate_XY2Ref(self):
 
-        yaw = self.attitude_state[2]
+        yaw = self.attitude_state[0]
         XY_ref = self.position_ref[0:2]
         XY_state = self.position_state[0:2]
         XY_dot_state = self.velocity_state[0:2]
@@ -67,9 +89,6 @@ class FlightControllerSystem():
             [np.cos(yaw), -np.sin(yaw)],
             [np.sin(yaw), np.cos(yaw)]
         ])
-
-        P_xy = np.array([-0.24, 0.24])
-        D_xy = np.array([0.1, -0.1])
 
         # Saturatin
         temp = R @ (XY_ref - XY_state)
@@ -86,40 +105,36 @@ class FlightControllerSystem():
         Z_state = self.position_state[2]
         Z_dot_state = self.velocity_state[2]
 
-        P_z = 0.8
-        D_z = 0.3
-        totalThrustMaxRelative = 0.920000000000000
-        motorsThrustPerMotorMax = 0.326642213351703
-
         if takeoff_flag == True:
             pass # implement takeoff
         else:
 
             # Saturate
-            temp = P_z * (Z_ref - Z_state) - D_z * Z_dot_state
-            attitude_CMD = np.clip(temp, -4*totalThrustMaxRelative*motorsThrustPerMotorMax,
+            attitude_CMD = P_z * (Z_ref - Z_state) - D_z * Z_dot_state
+        attitude_CMD = attitude_CMD - QPC.quad['M'] * QPC.quad['g']
+        attitude_CMD = np.clip(attitude_CMD, -4*totalThrustMaxRelative*motorsThrustPerMotorMax,
                                     4*totalThrustMaxRelative*motorsThrustPerMotorMax)
             
         return attitude_CMD
     
     def AttitudeController(self):
 
-        attitude_ref = np.array([self.attitude_ref[0], self.attitude_ref[1]])
-        attitude_state = np.array([self.attitude_state[0], self.attitude_state[1]])
-        attitude_dot_state = np.array([self.angular_velocity_state[0], self.angular_velocity_state[1]])
+        attitude_ref = np.array([self.attitude_ref[1], self.attitude_ref[2]])
+        attitude_state = np.array([self.attitude_state[1], self.attitude_state[2]])
+        attitude_dot_state = np.array([self.angular_velocity_state[1], self.angular_velocity_state[2]])
 
         pitch_roll_error = attitude_ref - attitude_state
 
-        P_pr = np.array([0.013, 0.01])
-        I_pr = 0.01
-        D_pr = np.array([0.002, 0.0028])
+        integralComponent = self.prev_integralComponent + (pitch_roll_error + self.prev_pitch_roll_error) * self.dT / 2
+        integralComponent += antiWU_Gain * (self.prev_integralComponent - self.prev_pitch_roll_error)
 
-        integralComponent = np.zeros(2) # TODO: implement integral component
+        P_pr_out = P_pr * pitch_roll_error - D_pr * attitude_dot_state + I_pr * integralComponent
 
-        P_pr = P_pr * pitch_roll_error - D_pr * attitude_dot_state + I_pr * integralComponent
+        tau_pitch = P_pr_out[0]
+        tau_roll = P_pr_out[1]
 
-        tau_pitch = P_pr[0]
-        tau_roll = P_pr[1]
+        self.prev_pitch_roll_error = pitch_roll_error
+        self.prev_integralComponent = integralComponent
 
         return tau_pitch, tau_roll
     
@@ -149,11 +164,6 @@ class FlightControllerSystem():
 
     def thrustsToMotorCommands(self):
 
-        thrustToMotorCommand = 1530.7
-        maxLimit = 500
-        minLimit = 10
-        motorDirections = np.array([1, -1, 1, -1])
-
         thrusts = self.ControlMixer()
 
         motor_CMD = thrusts * -1 * thrustToMotorCommand
@@ -168,13 +178,13 @@ class FlightControllerSystem():
     def update(self, x, ref):
 
         self.position_state = x[0:3]
-        self.velocity_state = x[3:6]
-        self.attitude_state = x[6:9]
+        self.attitude_state = x[3:6]
+        self.velocity_state = x[6:9]
         self.angular_velocity_state = x[9:12]
 
         self.position_ref = ref[0:3]
-        self.velocity_ref = ref[3:6]
-        self.attitude_ref = ref[6:9]
+        self.attitude_ref = ref[3:6]
+        self.velocity_ref = ref[6:9]
         self.angular_velocity_ref = ref[9:12]
 
         motor_CMD = self.thrustsToMotorCommands()
@@ -193,9 +203,11 @@ class FlightControllerSystem():
         return self.control_hist, self.state_hist, self.ref_hist, self.thrust_hist
     
     def plotScope(self, pos_state = True, pos_ref = True, orientation_state = True, orientation_ref = True,
-                  control = True, thrust = True):
+                  control = True, thrust = True, controllerTuning = True):
         
         # Unpack data
+
+        print("Plotting Scope")
 
         control_hist, state_hist, ref_hist, thrust_hist = self.getHist()
         control_hist = np.array(control_hist)
@@ -273,13 +285,82 @@ class FlightControllerSystem():
         if thrust:
             # Plot motor1, motor2, motor3, motor4 over time
             plt.figure()
-            plt.plot(motor1, label='motor1')
-            plt.plot(motor2, label='motor2')
-            plt.plot(motor3, label='motor3')
-            plt.plot(motor4, label='motor4')
+            plt.plot(t, motor1, label='motor1')
+            plt.plot(t, motor2, label='motor2')
+            plt.plot(t, motor3, label='motor3')
+            plt.plot(t, motor4, label='motor4')
             plt.xlabel('Time')
             plt.ylabel('Motor Commands')
             plt.legend()
             plt.title('Motor Commands over Time')
+        
+        if controllerTuning:
+            # Plot yaw_ref, yaw, tau_yaw over time
+            plt.figure()
+            plt.subplot(2, 1, 1)
+            plt.plot(t, yaw_ref, label='yaw_ref')
+            plt.plot(t, yaw, label='yaw state')
+            plt.xlabel('Time')
+            plt.ylabel('Yaw')
+            plt.legend()
+            plt.title('Yaw over Time')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(t, u4, label='tau_yaw')
+            plt.xlabel('Time')
+            plt.ylabel('Tau Yaw')
+            plt.legend()
+            plt.title('Tau Yaw over Time')
+
+            # Plot pitch_ref, pitch, tau_pitch over time
+            plt.figure()
+            plt.subplot(2, 1, 1)
+            plt.plot(t, pitch_ref, label='pitch_ref')
+            plt.plot(t, pitch, label='pitch state')
+            plt.xlabel('Time')
+            plt.ylabel('Pitch')
+            plt.legend()
+            plt.title('Pitch over Time')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(t, u2, label='tau_pitch')
+            plt.xlabel('Time')
+            plt.ylabel('Tau Pitch')
+            plt.legend()
+            plt.title('Tau Pitch over Time')
+
+            # Plot roll_ref, roll, tau_roll over time
+            plt.figure()
+            plt.subplot(2, 1, 1)
+            plt.plot(t, roll_ref, label='roll_ref')
+            plt.plot(t, roll, label='roll state')
+            plt.xlabel('Time')
+            plt.ylabel('Roll')
+            plt.legend()
+            plt.title('Roll over Time')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(t, u3, label='tau_roll')
+            plt.xlabel('Time')
+            plt.ylabel('Tau Roll')
+            plt.legend()
+            plt.title('Tau Roll over Time')
+
+            # Plot thrust over time
+            plt.figure()
+            plt.subplot(2, 1, 1)
+            plt.plot(t, z_ref, label='thrust_ref')
+            plt.plot(t, z, label='thrust state')
+            plt.xlabel('Time')
+            plt.ylabel('Roll')
+            plt.legend()
+            plt.title('thrust over Time')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(t, u1, label='thrust')
+            plt.xlabel('Time')
+            plt.ylabel('thrust')
+            plt.legend()
+            plt.title('thrust over Time')
         
         plt.show()

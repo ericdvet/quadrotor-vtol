@@ -23,7 +23,7 @@ FSC = FlightControllerSystem.FlightControllerSystem(x, waypoint, dT, True)
 for i in range(int(30/dT)):
 
     if i*dT > 1:
-        waypoint = np.array([0, 0, -1.5, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        waypoint = np.array([0, 0, -1.5, 0.1, 0.1, 0.1, 0, 0, 0, 0, 0, 0])
 
     try:
         pose_refout, u = FSC.update(x, waypoint)
@@ -34,6 +34,6 @@ for i in range(int(30/dT)):
 
     t += dT
 
-FSC.plotScope(pos_state=True, pos_ref=False, orientation_state=True, orientation_ref=False,
-              control=True, thrust=False)
+FSC.plotScope(pos_state=False, pos_ref=False, orientation_state=False, orientation_ref=False,
+              control=False, thrust=False, controllerTuning = True)
 

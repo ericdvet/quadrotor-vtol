@@ -56,20 +56,22 @@ quad['rho'] = 1.184     # Density of air
 quad['muv'] = 1.5e-5    # Viscosity of air
 
 # Airframe
-quad['M'] = 0.068       # Mass
+quad['M'] = 0.063       # Mass
 
 # Flyer rotational inertia matrix
-quad['J'] = np.diag([0.0686e-3, 0.092e-3, 0.1366e-3])
+quad['J'] = np.diag([5.82857e-05, 
+                       7.16914e-05, 
+                       0.0001])
 
-quad['h'] = -(6.5 + 9.376) / 1000   # Height of rotors above CoG
-quad['d'] = 0.0624                  # Length of flyer arms
+quad['h'] = -0.015876   # Height of rotors above CoG
+quad['d'] = 0.0624      # Length of flyer arms
 
 # Rotor
 quad['nb'] = 2  # Number of blades per rotor
-quad['r'] = 33 / 1000  # Rotor radius
+quad['r'] = 0.033  # Rotor radius
 quad['c'] = 0.008  # Blade chord
 quad['e'] = 0.0  # Flapping hinge offset
-quad['Mb'] = 0.0015 / 4  # Rotor blade mass
+quad['Mb'] = 3.75e-04  # Rotor blade mass
 quad['Mc'] = 0  # Estimated hub clamp mass
 quad['ec'] = 0  # Blade root clamp displacement
 quad['Ib'] = quad['Mb'] * (quad['r'] - quad['ec']) ** 2 / 4  # Rotor blade rotational inertia
@@ -81,12 +83,10 @@ quad['Ct'] = 0.0107  # Non-dim. thrust coefficient
 quad['Cq'] = quad['Ct'] * np.sqrt(quad['Ct'] / 2)  # Non-dim. torque coefficient
 
 quad['sigma'] = quad['c'] * quad['nb'] / (np.pi * quad['r'])  # Rotor solidity ratio
-quad['thetat'] = 6.8 * (np.pi / 180)  # Blade tip angle
 quad['theta0'] = 14.6 * (np.pi / 180)  # Blade root angle
+quad['thetat'] = 6.8 * (np.pi / 180)  # Blade tip angle
 quad['theta1'] = quad['thetat'] - quad['theta0']  # Blade twist angle
 quad['theta75'] = quad['theta0'] + 0.75 * quad['theta1']  # 3/4 blade angle
-# quad['thetai'] = quad['thetat'] * (quad['r'] / quad['e'])  # Blade ideal root approximation
-quad['thetai'] = 10000  # Blade ideal root approximation
 quad['a'] = 5.5  # Lift slope gradient
 
 # Derived constants
@@ -96,6 +96,10 @@ quad['gamma'] = quad['rho'] * quad['a'] * quad['c'] * quad['r'] ** 4 / (quad['Ib
 quad['b'] = quad['Ct'] * quad['rho'] * quad['A'] * quad['r'] ** 2  # T = b w^2
 quad['k'] = quad['Cq'] * quad['rho'] * quad['A'] * quad['r'] ** 3  # Q = k w^2
 
-quad['verbose'] = False
+# Motors
+quad['max_motor_limit'] = 500
+quad['min_motor_limit'] = 10
+quad['command_to_w2_gain'] = 13840.8  # Motor command for Rolling Spider (0-500) to motor speed^2
+quad['thrust_to_motor_command'] = 1 / (quad['b'] * quad['command_to_w2_gain'])
 
-# Workspace
+quad['verbose'] = False
