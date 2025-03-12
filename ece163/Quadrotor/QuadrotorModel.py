@@ -11,7 +11,7 @@ from . import QuadrotorPhysicalConstants
 epsilon = 1e-6
 
 class QuadrotorModel:
-    def __init__(self, quad, dT = 0.01):
+    def __init__(self, quad, x0, dT = 0.01):
         """
         Initialization of the internal classes which are used to track the vehicle aerodynamics and dynamics.
 
@@ -27,10 +27,10 @@ class QuadrotorModel:
         self.dT = dT
 
         self.sys = np.zeros(12)
-        x0 = np.array([0, 0, -0.046,   # z (position)
-                            0, 0, 0,        # n (angular position)
-                            0, 0, 0,        # v (velocity)
-                            0, 0, 0])       # o (angular velocity)
+        # x0 = np.array([0, 0, -0.046,   # z (position)
+        #                     0, 0, 0,        # n (angular position)
+        #                     0, 0, 0,        # v (velocity)
+        #                     0, 0, 0])       # o (angular velocity)
 
         self.x = x0
 
