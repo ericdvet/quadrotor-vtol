@@ -4,29 +4,33 @@ import sys
 import PyQt5.QtWidgets as QtWidgets
 
 import ece163.Display.baseInterface as baseInterface
-import ece163.Containers.Inputs as Inputs
 import ece163.Display.GridVariablePlotter
 import ece163.Display.SliderWithValue
-import ece163.Simulation.QuadrotorDynamicsSimulateHelper
+import ece163.Simulation.Chapter5Simulate
 import ece163.Display.DataExport
+import ece163.Display.doubleInputWithLabel
+import ece163.Constants.VehiclePhysicalConstants as VehiclePhysicalConstants
 import ece163.Display.WindControl as WindControl
-
-from ece163.Utilities.Joystick import Joystick
-from ece163.Constants import JoystickConstants as JSC
-
-import numpy as np
+from ece163.Display.vehicleTrimWidget import vehicleTrimWidget
+import ece163.Quadrotor.QuadrotorPhysicalConstants as QPC
+import ece163.Quadrotor.FlightControllerSystem as FSC
+import ece163.Quadrotor.QuadrotorModel
+import ece163.Simulation.QuadRotorSimulate
 
 stateNamesofInterest = ['pn', 'pe', 'pd', 'yaw', 'pitch', 'roll', 'u', 'v', 'w', 'p', 'q', 'r', 'alpha', 'beta']
-systemInputs = [('Motor 1 (white)', 0, 4000, 0),
-				('Motor 2 (red)', 0, 4000, 0),
-				('Motor 3 (green)', 0, 4000, 0),
-				('Motor 4 (blue)', 0, 4000, 0)]
+systemInputs = [('Motor1', 0, 1, 0),
+				('Motor2', -0.3, 0.3, 0),
+				('Motor3', -0.3, 0.3, 0),
+				('Motor4', -0.3, 0.3, 0)]
 
 positionRange = 200
 
-class QuadrotorSimulation(baseInterface.baseInterface):
+defaultTrimParameters = [('Airspeed', VehiclePhysicalConstants.InitialSpeed), ('Climb Angle', 0), ('Turn Radius', math.inf)]
+
+class Chapter5(baseInterface.baseInterface):
+
 	def __init__(self, parent=None):
-		self.simulateInstance = ece163.Simulation.QuadrotorDynamicsSimulateHelper.QuadrotorDynamicsSimulateHelper()
+		self.simulateInstance = ece163.Simulation.QuadRotorSimulate.QuadrotorSimulate()
 		super().__init__(parent)
 		self.setWindowTitle("ECE263 Quadrotor VTOL")
 		plotElements = [[x] for x in stateNamesofInterest]
@@ -40,43 +44,21 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 		self.outPutTabs.setCurrentIndex(2)
 		self.stateUpdateDefList.append(self.updateStatePlots)
 
-		self.exportWidget = ece163.Display.DataExport.DataExport(self.simulateInstance,'Quadrotor')
+		self.exportWidget = ece163.Display.DataExport.DataExport(self.simulateInstance, 'Chapter5')
 		self.outPutTabs.addTab(self.exportWidget, "Export Data")
 
-		self.inputControlsWidget = QtWidgets.QWidget()
-		gridSquish = QtWidgets.QVBoxLayout()
-		self.inputGrid = QtWidgets.QGridLayout()
-		gridSquish.addLayout(self.inputGrid)
-		gridSquish.addStretch()
-		self.inputControlsWidget.setLayout(gridSquish)
-		self.inputTabs.addTab(self.inputControlsWidget, "Control Inputs")
-		# self.inputLayout.addLayout(self.inputGrid)
+
+
+		self.trimCalcWidget = vehicleTrimWidget(self, self.trimCalcComplete)
+		self.inputTabs.addTab(self.trimCalcWidget, "Trim")
+		# self.inputTabs.
+
+
 		self.windControl = WindControl.WindControl(self.simulateInstance.underlyingModel)
 		self.inputTabs.addTab(self.windControl, WindControl.widgetName)
 
-		resetSlidersButton = QtWidgets.QPushButton("Reset Sliders")
-		gridSquish.addWidget(resetSlidersButton)
-		resetSlidersButton.clicked.connect(self.resetSliders)
-
-		self.inputLayout.addStretch()
-		self.inputSliders = list()
-
-		for row in range(2):
-			for col in range(2):
-				index = col+row*2
-				name, minValue, maxValue, startValue = systemInputs[index]
-				newSlider = ece163.Display.SliderWithValue.SliderWithValue(name, minValue, maxValue, startValue)
-				self.inputSliders.append(newSlider)
-				self.inputGrid.addWidget(newSlider, row, col)
-
 		# self.playButton.setDisabled(True)
 		self.showMaximized()
-
-		self.joystick = Joystick()
-
-		#For convenience, if a controller is active, go directly to the wind tab
-		if self.joystick.active:
-			self.inputTabs.setCurrentIndex(1)
 
 		####Simulation Update code###
 		# # Updates the simulation when tab is being changed
@@ -89,13 +71,6 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 		# Overwrite simulationTimedThread function with modified sliderChangeResponse
 		self.simulationTimedThread.timeout.connect(self.UpdateSimulationPlots)
 
-
-
-		return
-
-	def resetSliders(self):
-		for slider in self.inputSliders:
-			slider.resetSlider()
 		return
 
 	def updateStatePlots(self, newState):
@@ -116,61 +91,50 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 		return self.simulateInstance.underlyingModel.getVehicleState()
 
 	def runUpdate(self):
-		inputControls = np.array([0, 0, 0, 0])
-		
-		#If a controller was initialized, use the values for input
-		# if self.joystick.active:
-		# 	joystick_vals = self.joystick.get_joystick_values().control_axes
-		# 	inputControls.Aileron = joystick_vals.Aileron * JSC.CHAPTER4_MAX_THROW
-		# 	inputControls.Elevator = joystick_vals.Elevator * JSC.CHAPTER4_MAX_THROW
-		# 	inputControls.Rudder = -joystick_vals.Rudder * JSC.CHAPTER4_MAX_THROW
-		# 	inputControls.Throttle = joystick_vals.Throttle
-		# 	for slider in self.inputSliders:
-		# 		slider.setSlider(getattr(inputControls,slider.name))
-		
-		# else:
-		for control in self.inputSliders:
-			if control.name == 'Motor 1 (white)':
-				inputControls[0] = control.curValue
-			elif control.name == 'Motor 2 (red)':
-				inputControls[1] = control.curValue
-			elif control.name == 'Motor 3 (green)':
-				inputControls[2] = control.curValue
-			elif control.name == 'Motor 4 (blue)':
-				inputControls[3] = control.curValue 
-		
-		self.simulateInstance.takeStep(inputControls)
+		# inputControls = Inputs.controlInputs()
+		self.simulateInstance.takeStep()
 
 		return
-
-	# def sliderChangeResponse(self, newValue, name):
-	# 	if name in ['yaw', 'pitch', 'roll']:
-	# 		setattr(self.vehicleState, name, math.radians(newValue))
-	# 	else:
-	# 		if name == 'z':
-	# 			newValue = -1*newValue
-	# 		setattr(self.vehicleState, name, newValue)
-	# 	self.runSimulation()
-	# 	return
 
 	def resetSimulationActions(self):
 		self.simulateInstance.reset()
 		self.stateGrid.clearDataPointsAll()
 		self.vehicleInstance.reset(self.simulateInstance.underlyingModel.getVehicleState())
+		self.updateNumericStateBox(self.simulateInstance.underlyingModel.getVehicleState())
+		self.vehicleInstance.removeAllAribtraryLines()
 		self.outPutTabs.setCurrentIndex(0)
 
-	#### Simulation Update Code ##########
+	def trimCalcComplete(self, Vastar, Kappastar, Gammastar,  **kwargs):
+		# self.vehicleInstance.reset()
+		self.ResetSimulation()
+		newControlInput = self.trimCalcWidget.currentTrimControls
+		self.simulateInstance.controlInput = newControlInput
+
+		newStartState = self.trimCalcWidget.currentTrimState
+		self.simulateInstance.underlyingModel.setVehicleState(newStartState)
+		self.updateNumericStateBox(newStartState)
+		self.vehicleInstance.reset(newStartState)
+		self.vehicleInstance.removeAllAribtraryLines()
+		self.vehicleInstance.addAribtraryLine(self.trimCalcWidget.trimInstance.GenerateIdealPath(Vastar, Kappastar, Gammastar), (0, 0, 1, 1))
+
+		# self.vehicleInstance.openGLWindow.repaint()
+		# self.vehicleInstance.clearAribtraryLine()
+		# time.sleep(1)
+
+
+
+		return
 
 	# Updates a simulation widget when new tab clicked
 	def UpdateSimulationPlots(self):
-
 		currentWidget = self.outPutTabs.currentWidget()
 		# Ensure that that the timer is only enabled for states, sensors, and control response widgets
 		if (currentWidget in self.plotWidgets):
-			#self.runUpdate()
+			# self.runUpdate()
 			self.updatePlotsOn()
 			self.updatePlotsOff()
 		return
+
 	def newTabClicked(self):
 		self.updatePlotsOn()
 		self.updatePlotsOff()
@@ -193,6 +157,7 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 		self.togglestateGridPlot(False)
 		return
 
+
 sys._excepthook = sys.excepthook
 
 def my_exception_hook(exctype, value, tracevalue):
@@ -212,6 +177,6 @@ sys.excepthook = my_exception_hook
 
 
 qtApp = QtWidgets.QApplication(sys.argv)
-ourWindow = QuadrotorSimulation()
+ourWindow = Chapter5()
 ourWindow.show()
 qtApp.exec()
