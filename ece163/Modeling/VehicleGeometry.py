@@ -7,6 +7,7 @@ arbitrary size for good rendering in the display window.
 from ..Utilities import MatrixMath
 from ..Utilities import Rotations
 from ..Constants import VehiclePhysicalConstants as VPC
+import numpy as np
 
 baseUnit = 1.0
 
@@ -93,7 +94,9 @@ class VehicleGeometry():
 				[prop_x + prop_blade_width / 2, prop_y + prop_blade_length / 2, prop_z],  
 				[prop_x - prop_blade_width / 2, prop_y + prop_blade_length / 2, prop_z],  
 			])
-
+		rotation_45_yaw = Rotations.euler2DCM(np.radians(45), 0, 0)
+		self.vertices = MatrixMath.multiply(self.vertices, rotation_45_yaw)
+		
 		self.faces = [
 			[0, 1, 2], [0, 2, 3],  
 			[4, 5, 6], [4, 6, 7],  
