@@ -23,98 +23,98 @@ class VehicleGeometry():
 		"""
 
 
-		red = [1., 0., 0., 1]
-		green = [0., 1., 0., 1]
-		blue = [0., 0., 1., 1]
-		yellow = [1., 1., 0., 1]
-		white = [1.,1.,1.,1]
-		black = [0., 0., 0., 0.]
+		chassis_color = [1., 1., 0., 1] #yellow
+		propeller_color = [1., 0., 0., 1] #red
 
-		# squat squarish vehicle as a more complicated practice
+		scalingUnit = VPC.b / 6.0  
 
-		# self.vertices = [[baseUnit,0,0], # [0] nose
-		# 				 [baseUnit/2,-baseUnit/2,-baseUnit/4],   # [1] front top left
-		# 				 [-baseUnit/2,-baseUnit/2,-baseUnit/4],  # [2] rear top left
-		# 				 [-baseUnit/2,baseUnit/2,-baseUnit/4],   # [3] rear top right
-		# 				 [baseUnit/2,baseUnit/2,-baseUnit/4],     # [4] front top right
-		# 				 [baseUnit/2,baseUnit/2,baseUnit/4],    # [5] front bottom right
-		# 				 [baseUnit/2,-baseUnit/2,baseUnit/4],   # [6] front bottom left
-		# 				 [-baseUnit/2,-baseUnit/2,baseUnit/4],   # [7] rear bottom left
-		# 				 [-baseUnit/2,baseUnit/2,baseUnit/4],    # [8] rear bottom right
-		# 				 [-baseUnit/2,0,-0.75*baseUnit],			 # [9] fin top point
-		# 				 [-baseUnit/2,0,0],                      # [10] fin rear point
-		# 				 [0,0,0]]                      # [11] fin front point
-		#
-		# self.faces = [[0,1,4],         # [0] nose top
-		# 			  [1,3,4],[1,2,3], # [1],[2] body top
-		# 			  [0,1,6],         # [3] nose left
-		# 			  [1,7,6],[1,7,2], # [4],[5] body left
-		# 			  [2,3,8],[2,8,7], # [6],[7] body rear
-		# 			  [3,4,8],[8,4,5], # [8],[9] body right
-		# 			  [5,0,4],         # [10] nose right
-		# 			  [0,5,6],         # [11] nose bottom
-		# 			  [6,8,5],[6,8,7], # [12],[13] body bottom
-		# 			  [9,10,11]]       # [14] fin
-		#
-		# self.colors=[yellow,yellow,yellow, # top
-		# 			 blue,blue,blue, # left
-		# 			 red,red, # back
-		#              green,green,green, # right
-		# 			 white,white,white, # bottom
-		# 			 blue] # tail
+		length_x = 5 * scalingUnit  
+		width_x = 0.6 * scalingUnit  
+		length_y = 5 * scalingUnit  
+		width_y = 0.6 * scalingUnit  
+		height = 0.3 * scalingUnit  
 
-		# actual MAV model from Beard Chapter 2
+		prop_blade_length = 1 * scalingUnit  
+		prop_blade_width = 0.1 * scalingUnit 
+		prop_z_offset = 0.01 * scalingUnit  
 
-		# define MAV body parameters
-		scalingUnit = VPC.b / 6.0	# scaling determined by the wingspan of the aircraft in VehiclePhysicalConstants
+		prop_x = length_x / 2  
+		prop_y = 0  
+		prop_z = height / 2 + prop_z_offset  
 
-		fuse_h = scalingUnit
-		fuse_w = scalingUnit
-		fuse_l1 = 2 * scalingUnit
-		fuse_l2 = scalingUnit
-		fuse_l3 = 4 * scalingUnit
-		wing_l = scalingUnit
-		wing_w = 6 * scalingUnit	# will match the wingspan (VPC.b) in meters exactly
-		tail_h = scalingUnit
-		tail_l = scalingUnit
-		tail_w = 2 * scalingUnit
+		propeller_positions = [
+			(length_x / 2, 0),  # Right 
+			(-length_x / 2, 0), # Left 
+			(0, length_y / 2),  # Front 
+			(0, -length_y / 2)  # Back 
+		]
 
-		self.vertices = [[fuse_l1, 0, 0],  # point 1 [0]
-						 [fuse_l2, fuse_w / 2.0, -fuse_h / 2.0],  # point 2 [1]
-						 [fuse_l2, -fuse_w / 2.0, -fuse_h / 2.0],  # point 3 [2]
-						 [fuse_l2, -fuse_w / 2.0, fuse_h / 2.0],  # point 4 [3]
-						 [fuse_l2, fuse_w / 2.0, fuse_h / 2.0],  # point 5 [4]
-						 [-fuse_l3, 0, 0],  # point 6 [5]
-						 [0, wing_w / 2.0, 0],  # point 7 [6]
-						 [-wing_l, wing_w / 2.0, 0],  # point 8 [7]
-						 [-wing_l, -wing_w / 2.0, 0],  # point 9 [8]
-						 [0, -wing_w / 2.0, 0],  # point 10 [9]
-						 [-fuse_l3 + tail_l, tail_w / 2.0, 0],  # point 11 [10]
-						 [-fuse_l3, tail_w / 2.0, 0],  # point 12 [11]
-						 [-fuse_l3, -tail_w / 2.0, 0],  # point 13 [12]
-						 [-fuse_l3 + tail_l, -tail_w / 2.0, 0],  # point 14 [13]
-						 [-fuse_l3 + tail_l, 0, 0],  # point 15 [14]
-						 [-fuse_l3, 0, -tail_h]]  # point 16 [15]
+		self.vertices = [
+			# x-axis rectangle
+			[-length_x / 2, -width_x / 2, -height / 2],  
+			[length_x / 2, -width_x / 2, -height / 2],  
+			[length_x / 2, width_x / 2, -height / 2],  
+			[-length_x / 2, width_x / 2, -height / 2],  
+			[-length_x / 2, -width_x / 2, height / 2],  
+			[length_x / 2, -width_x / 2, height / 2],  
+			[length_x / 2, width_x / 2, height / 2],  
+			[-length_x / 2, width_x / 2, height / 2],  
 
-		self.faces = [[0, 1, 2],
-					  [0, 1, 4],
-					  [0, 3, 4],
-					  [0, 3, 2],
-					  [5, 2, 3],
-					  [5, 1, 2],
-					  [5, 1, 4],
-					  [5, 3, 4],
-					  [6, 7, 9],
-					  [7, 8, 9],
-					  [10, 11, 12],
-					  [10, 12, 13],
-					  [5, 14, 15]]
+			# y-axis rectangle
+			[-width_y / 2, -length_y / 2, -height / 2],  
+			[width_y / 2, -length_y / 2, -height / 2],  
+			[width_y / 2, length_y / 2, -height / 2],  
+			[-width_y / 2, length_y / 2, -height / 2],  
+			[-width_y / 2, -length_y / 2, height / 2],  
+			[width_y / 2, -length_y / 2, height / 2],  
+			[width_y / 2, length_y / 2, height / 2],  
+			[-width_y / 2, length_y / 2, height / 2],  
+		]
 
-		self.colors = [yellow, yellow, yellow, yellow,
-					   blue, blue, blue,
-					   red,
-					   green, green, green, green,
-					   blue]
+		# add propellers on all arms
+		for prop_x, prop_y in propeller_positions:
+			prop_z = height / 2 + prop_z_offset
+			self.vertices.extend([
+				# blade horizontal
+				[prop_x - prop_blade_length / 2, prop_y - prop_blade_width / 2, prop_z],  
+				[prop_x + prop_blade_length / 2, prop_y - prop_blade_width / 2, prop_z],  
+				[prop_x + prop_blade_length / 2, prop_y + prop_blade_width / 2, prop_z],  
+				[prop_x - prop_blade_length / 2, prop_y + prop_blade_width / 2, prop_z],  
+
+				# blade vertical
+				[prop_x - prop_blade_width / 2, prop_y - prop_blade_length / 2, prop_z],  
+				[prop_x + prop_blade_width / 2, prop_y - prop_blade_length / 2, prop_z],  
+				[prop_x + prop_blade_width / 2, prop_y + prop_blade_length / 2, prop_z],  
+				[prop_x - prop_blade_width / 2, prop_y + prop_blade_length / 2, prop_z],  
+			])
+
+		self.faces = [
+			[0, 1, 2], [0, 2, 3],  
+			[4, 5, 6], [4, 6, 7],  
+			[0, 1, 5], [0, 5, 4],  
+			[2, 3, 7], [2, 7, 6],  
+			[1, 2, 6], [1, 6, 5],  
+			[3, 0, 4], [3, 4, 7],  
+
+			[8, 9, 10], [8, 10, 11],  
+			[12, 13, 14], [12, 14, 15],  
+			[8, 9, 13], [8, 13, 12],  
+			[10, 11, 15], [10, 15, 14],  
+			[9, 10, 14], [9, 14, 13],  
+			[11, 8, 12], [11, 12, 15],  
+		]
+
+		# faces for each prop
+		for i in range(len(self.vertices) - 32, len(self.vertices), 8):  
+			self.faces.extend([
+				[i, i + 1, i + 2],  
+				[i, i + 2, i + 3],  
+				[i + 4, i + 5, i + 6],  
+				[i + 4, i + 6, i + 7],  
+			])
+
+		# apply colors
+		self.colors = [chassis_color] * (len(self.faces) - 16) + [propeller_color] * 16
 
 		return
 
