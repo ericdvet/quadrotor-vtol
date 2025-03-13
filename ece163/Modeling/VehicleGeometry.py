@@ -24,7 +24,13 @@ class VehicleGeometry():
 
 
 		chassis_color = [1., 1., 0., 1] #yellow
-		propeller_color = [1., 0., 0., 1] #red
+		propeller_color1 = [1., 0., 0., 1] #red
+		propeller_color2 = [0., 0., 1., 1] #blue
+		propeller_color3 = [0.,1.,0.,1] #green
+		propeller_color4 = [1.,1.,1.,1]# wihte
+
+
+
 
 		scalingUnit = VPC.b / 6.0  
 
@@ -114,7 +120,7 @@ class VehicleGeometry():
 			])
 
 		# apply colors
-		self.colors = [chassis_color] * (len(self.faces) - 16) + [propeller_color] * 16
+		self.colors = [chassis_color] * (len(self.faces) - 16) + [propeller_color1]*4 +[propeller_color2]*4 + [propeller_color3]*4+ [propeller_color4] * 4
 
 		return
 
