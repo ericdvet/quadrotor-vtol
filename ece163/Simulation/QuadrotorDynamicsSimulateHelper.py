@@ -12,6 +12,7 @@ class QuadrotorDynamicsSimulateHelper(Simulate.Simulate):
 		
 		self.dT = 0.01
 		self.x = np.array([0, 0, -100, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+		self.crashFlag = False
 		
 		self.underlyingModel = QuadrotorModel.QuadrotorModel(quad.quad, x0=self.x, dT = self.dT)
 
@@ -27,13 +28,21 @@ class QuadrotorDynamicsSimulateHelper(Simulate.Simulate):
 		return self.underlyingModel.getVehicleState()
 
 	def takeStep(self, controlInput):
-		self.time += self.dT
-		self.x = self.underlyingModel.update(self.x, controlInput)
-		self.recordData([controlInput[0], controlInput[1], controlInput[2], controlInput[3]])
+		if self.crashFlag == False:
+			self.time += self.dT
+			try:
+				self.x = self.underlyingModel.update(self.x, controlInput)
+			except:
+				self.crashFlag = True
+				print("Quadrotor is pitched over. Dynamics model fails past this point.")
+			self.recordData([controlInput[0], controlInput[1], controlInput[2], controlInput[3]])
+		else:
+			return
 		return
 
 	def reset(self):
 		self.time = 0
-		x = np.array([0, 0, -1.5, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-		self.underlyingModel = QuadrotorModel.QuadrotorModel(quad.quad, x0=x, dT = self.dT)
+		self.crashFlag = False
+		self.x = np.array([0, 0, -100, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+		self.underlyingModel = QuadrotorModel.QuadrotorModel(quad.quad, x0=self.x, dT = self.dT)
 		self.takenData.clear()
