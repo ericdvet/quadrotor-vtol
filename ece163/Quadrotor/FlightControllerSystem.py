@@ -126,7 +126,7 @@ class FlightControllerSystem():
         pitch_roll_error = attitude_ref - attitude_state
 
         integralComponent = self.prev_integralComponent + (pitch_roll_error + self.prev_pitch_roll_error) * self.dT / 2
-        integralComponent += antiWU_Gain * (self.prev_integralComponent - self.prev_pitch_roll_error)
+        integralComponent += antiWU_Gain * (self.prev_integralComponent - self.prev_pitch_roll_error) # iffy about this
 
         P_pr_out = P_pr * pitch_roll_error - D_pr * attitude_dot_state + I_pr * integralComponent
 
