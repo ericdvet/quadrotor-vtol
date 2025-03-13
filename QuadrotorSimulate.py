@@ -17,16 +17,16 @@ from ece163.Constants import JoystickConstants as JSC
 import numpy as np
 
 stateNamesofInterest = ['pn', 'pe', 'pd', 'yaw', 'pitch', 'roll', 'u', 'v', 'w', 'p', 'q', 'r', 'alpha', 'beta']
-systemInputs = [('Motor 1 (white)', 0, 4000, 0),
-				('Motor 2 (red)', 0, 4000, 0),
-				('Motor 3 (green)', 0, 4000, 0),
-				('Motor 4 (blue)', 0, 4000, 0)]
+systemInputs = [('Motor 1 (white)', -4000, 4000, 0),
+				('Motor 2 (red)', -4000, 4000, 0),
+				('Motor 3 (green)', -4000, 4000, 0),
+				('Motor 4 (blue)', -4000, 4000, 0)]
 
 positionRange = 200
 
 class QuadrotorSimulation(baseInterface.baseInterface):
-	def __init__(self, parent=None):
-		self.simulateInstance = ece163.Simulation.QuadrotorDynamicsSimulateHelper.QuadrotorDynamicsSimulateHelper()
+	def __init__(self, parent=None, mode=0):
+		self.simulateInstance = ece163.Simulation.QuadrotorDynamicsSimulateHelper.QuadrotorDynamicsSimulateHelper(mode = mode)
 		super().__init__(parent)
 		self.setWindowTitle("ECE163 Chapter 4")
 		plotElements = [[x] for x in stateNamesofInterest]
@@ -209,9 +209,12 @@ def my_exception_hook(exctype, value, tracevalue):
 # Set the exception hook to our wrapping function
 sys.excepthook = my_exception_hook
 
+mode = int(input("Enter '0' for free control, '1' for take-off demo' or '2' for hover demo: "))
 
+if mode < 0 or mode > 2:
+    exit("https://www.wikihow.com/Teach-Yourself-to-Read")
 
 qtApp = QtWidgets.QApplication(sys.argv)
-ourWindow = QuadrotorSimulation()
+ourWindow = QuadrotorSimulation(mode=mode)
 ourWindow.show()
 qtApp.exec()
