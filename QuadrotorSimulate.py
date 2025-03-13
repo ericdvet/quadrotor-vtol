@@ -17,10 +17,10 @@ from ece163.Constants import JoystickConstants as JSC
 import numpy as np
 
 stateNamesofInterest = ['pn', 'pe', 'pd', 'yaw', 'pitch', 'roll', 'u', 'v', 'w', 'p', 'q', 'r', 'alpha', 'beta']
-systemInputs = [('Throttle', 0, 1, 0),
-				('Aileron', -0.3, 0.3, 0),
-				('Elevator', -0.3, 0.3, 0),
-				('Rudder', -0.3, 0.3, 0)]
+systemInputs = [('Motor 1', 0, 4000, 0),
+				('Motor 2', 0, 4000, 0),
+				('Motor 3', 0, 4000, 0),
+				('Motor 4', 0, 4000, 0)]
 
 positionRange = 200
 
@@ -130,13 +130,13 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 		
 		# else:
 		for control in self.inputSliders:
-			if control.name == 'Throttle':
+			if control.name == 'Motor 1':
 				inputControls[0] = control.curValue
-			elif control.name == 'Aileron':
+			elif control.name == 'Motor 2':
 				inputControls[1] = control.curValue
-			elif control.name == 'Elevator':
+			elif control.name == 'Motor 3':
 				inputControls[2] = control.curValue
-			elif control.name == 'Rudder':
+			elif control.name == 'Motor 4':
 				inputControls[3] = control.curValue 
 		
 		self.simulateInstance.takeStep(inputControls)

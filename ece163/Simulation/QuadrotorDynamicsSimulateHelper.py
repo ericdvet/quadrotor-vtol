@@ -28,7 +28,6 @@ class QuadrotorDynamicsSimulateHelper(Simulate.Simulate):
 
 	def takeStep(self, controlInput):
 		self.time += self.dT
-		print(controlInput)
 		self.x = self.underlyingModel.update(self.x, controlInput)
 		self.recordData([controlInput[0], controlInput[1], controlInput[2], controlInput[3]])
 		return
@@ -36,5 +35,5 @@ class QuadrotorDynamicsSimulateHelper(Simulate.Simulate):
 	def reset(self):
 		self.time = 0
 		x = np.array([0, 0, -1.5, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-		self.underlyingModel = QuadrotorModel.QuadrotorModel(quad, x0=x, dT = self.dT)
+		self.underlyingModel = QuadrotorModel.QuadrotorModel(quad.quad, x0=x, dT = self.dT)
 		self.takenData.clear()

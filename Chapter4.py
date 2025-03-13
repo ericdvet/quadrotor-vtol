@@ -16,10 +16,10 @@ from ece163.Constants import JoystickConstants as JSC
 
 
 stateNamesofInterest = ['pn', 'pe', 'pd', 'yaw', 'pitch', 'roll', 'u', 'v', 'w', 'p', 'q', 'r', 'alpha', 'beta']
-systemInputs = [('Throttle', 0, 1, 0),
-				('Aileron', -0.3, 0.3, 0),
-				('Elevator', -0.3, 0.3, 0),
-				('Rudder', -0.3, 0.3, 0)]
+systemInputs = [('Throttle', 0, 4000, 0),
+				('Aileron', 0, 4000, 0),
+				('Elevator', 0, 4000, 0),
+				('Rudder', 0, 4000, 0)]
 
 positionRange = 200
 

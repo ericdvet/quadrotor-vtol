@@ -1,4 +1,5 @@
 Traceback (most recent call last):
-  File "/home/harelab/ericdvet/UCSC/ECE263/quadrotor-vtol/ece163/Display/variablePlotter.py", line 66, in _ProcessNewPlotData
-    def _ProcessNewPlotData(self, newDataPoint, t=None):
+  File "C:\Users\erikv\AppData\Local\Programs\Python\Python311\Lib\site-packages\pyqtgraph\opengl\GLViewWidget.py", line 195, in paintGL
+    def paintGL(self, region=None, viewport=None, useItemNames=False):
+    
 KeyboardInterrupt
