@@ -27,7 +27,7 @@ for i in range(int(30/dT)):
 
     try:
         pose_refout, u = FSC.update(x, waypoint)
-        x = Quadrotor.update(t, x, u)
+        x = Quadrotor.update(x, u)
     except:
         print("Quadrotor.update() failed")
         break

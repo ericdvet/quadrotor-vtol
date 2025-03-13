@@ -137,12 +137,12 @@ def modelDerivatives(x, u, quad):
     the = n[1]      # pitch
     psi = n[2]      # roll
 
-    # if abs(the) > math.pi / 2:
-    #     raise ValueError('|pitch| greater than pi/2!')
-    # if abs(psi) > math.pi / 2:
-    #     raise ValueError('|roll| greater than pi/2!')
-    # if z[2] > 0:
-    #     raise ValueError('z greater than 0 (below ground)!')
+    if abs(the) > math.pi / 2:
+        raise ValueError('|pitch| greater than pi/2!')
+    if abs(psi) > math.pi / 2:
+        raise ValueError('|roll| greater than pi/2!')
+    if z[2] > 0:
+        raise ValueError('z greater than 0 (below ground)!')
 
     # R_phi @ R_the @ R_psi
     R_Body2World = np.array([
