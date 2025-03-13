@@ -28,7 +28,7 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 	def __init__(self, parent=None, mode=0):
 		self.simulateInstance = ece163.Simulation.QuadrotorDynamicsSimulateHelper.QuadrotorDynamicsSimulateHelper(mode = mode)
 		super().__init__(parent)
-		self.setWindowTitle("ECE163 Chapter 4")
+		self.setWindowTitle("ECE263 Quadrotor VTOL")
 		plotElements = [[x] for x in stateNamesofInterest]
 		plotElements.append(['Va', 'Vg'])
 		titleNames = list(stateNamesofInterest)
@@ -40,7 +40,7 @@ class QuadrotorSimulation(baseInterface.baseInterface):
 		self.outPutTabs.setCurrentIndex(2)
 		self.stateUpdateDefList.append(self.updateStatePlots)
 
-		self.exportWidget = ece163.Display.DataExport.DataExport(self.simulateInstance,'Chapter4')
+		self.exportWidget = ece163.Display.DataExport.DataExport(self.simulateInstance,'Quadrotor')
 		self.outPutTabs.addTab(self.exportWidget, "Export Data")
 
 		self.inputControlsWidget = QtWidgets.QWidget()

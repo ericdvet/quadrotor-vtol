@@ -14,10 +14,10 @@ import ece163.Display.WindControl as WindControl
 from ece163.Display.vehicleTrimWidget import vehicleTrimWidget
 
 stateNamesofInterest = ['pn', 'pe', 'pd', 'yaw', 'pitch', 'roll', 'u', 'v', 'w', 'p', 'q', 'r', 'alpha', 'beta']
-systemInputs = [('Throttle', 0, 1, 0),
-				('Aileron', -0.3, 0.3, 0),
-				('Elevator', -0.3, 0.3, 0),
-				('Rudder', -0.3, 0.3, 0)]
+systemInputs = [('Motor1', 0, 1, 0),
+				('Motor2', -0.3, 0.3, 0),
+				('Motor3', -0.3, 0.3, 0),
+				('Motor4', -0.3, 0.3, 0)]
 
 positionRange = 200
 

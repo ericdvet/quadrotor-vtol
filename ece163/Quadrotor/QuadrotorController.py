@@ -3,6 +3,7 @@ Description: This module contains the QuadrotorController class, which is used t
 """
 
 # delete these notes when done
+# Module not used right now
 
 from . import QuadrotorPhysicalConstants
 import numpy as np
