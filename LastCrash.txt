@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/home/harelab/ericdvet/UCSC/ECE263/quadrotor-vtol/ece163/Display/variablePlotter.py", line 66, in _ProcessNewPlotData
+    def _ProcessNewPlotData(self, newDataPoint, t=None):
+KeyboardInterrupt

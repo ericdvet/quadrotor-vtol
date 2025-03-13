@@ -11,7 +11,7 @@ from . import QuadrotorPhysicalConstants
 epsilon = 1e-6
 
 class QuadrotorModel:
-    def __init__(self, quad, x0, dT = 0.01):
+    def __init__(self, quad, x0 = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0]), dT = 0.01):
         """
         Initialization of the internal classes which are used to track the vehicle aerodynamics and dynamics.
 
@@ -27,14 +27,14 @@ class QuadrotorModel:
         self.dT = dT
 
         self.sys = np.zeros(12)
-        # x0 = np.array([0, 0, -0.046,   # z (position)
-        #                     0, 0, 0,        # n (angular position)
-        #                     0, 0, 0,        # v (velocity)
-        #                     0, 0, 0])       # o (angular velocity)
+        # x0 = np.array([0, 0, -0.046,      # z (position)
+        #                     0, 0, 0,      # n (angular position)
+        #                     0, 0, 0,      # v (velocity)
+        #                     0, 0, 0])     # o (angular velocity)
 
         self.x = x0
 
-    def update(self, t, x, u):
+    def update(self, x, u):
         """
         Function that uses the current internal state (x) and motor commands (u) to update the state of the quadrotor. 
         
@@ -65,13 +65,13 @@ class QuadrotorModel:
         """
 
 
-        if flag == 1:                                         # Derivative Calculation
+        if flag == 1:                               # Derivative Calculation
             sys = modelDerivatives(x, u, quad)
             x = []
-        elif flag == 2:                                         # Output Calculation
+        elif flag == 2:                             # Output Calculation
             sys = modelOutputs(x)
             x = []
-        else:                                                   # Error
+        else:                                       # Error
             raise NotImplementedError
         
         return sys, x
@@ -137,18 +137,24 @@ def modelDerivatives(x, u, quad):
     the = n[1]      # pitch
     psi = n[2]      # roll
 
-    if abs(the) > math.pi / 2:
-        raise ValueError('|pitch| greater than pi/2!')
-    if abs(psi) > math.pi / 2:
-        raise ValueError('|roll| greater than pi/2!')
-    if z[2] > 0:
-        raise ValueError('z greater than 0 (below ground)!')
+    # if abs(the) > math.pi / 2:
+    #     raise ValueError('|pitch| greater than pi/2!')
+    # if abs(psi) > math.pi / 2:
+    #     raise ValueError('|roll| greater than pi/2!')
+    # if z[2] > 0:
+    #     raise ValueError('z greater than 0 (below ground)!')
 
     # R_phi @ R_the @ R_psi
     R_Body2World = np.array([
-        [math.cos(the) * math.cos(phi),     math.sin(psi) * math.sin(the) * math.cos(phi) - math.cos(psi) * math.sin(phi),  math.cos(psi) * math.sin(the) * math.cos(phi) + math.sin(psi) * math.sin(phi)],
-        [math.cos(the) * math.sin(phi),     math.sin(psi) * math.sin(the) * math.sin(phi) + math.cos(psi) * math.cos(phi),  math.cos(psi) * math.sin(the) * math.sin(phi) - math.sin(psi) * math.cos(phi)],
-        [-math.sin(the),                    math.sin(psi) * math.cos(the),                                                  math.cos(psi) * math.cos(the)]
+        [math.cos(the) * math.cos(phi),     
+         math.sin(psi) * math.sin(the) * math.cos(phi) - math.cos(psi) * math.sin(phi),  
+         math.cos(psi) * math.sin(the) * math.cos(phi) + math.sin(psi) * math.sin(phi)],
+        [math.cos(the) * math.sin(phi),     
+         math.sin(psi) * math.sin(the) * math.sin(phi) + math.cos(psi) * math.cos(phi),  
+         math.cos(psi) * math.sin(the) * math.sin(phi) - math.sin(psi) * math.cos(phi)],
+        [-math.sin(the),                    
+         math.sin(psi) * math.cos(the),                                                  
+         math.cos(psi) * math.cos(the)]
     ])
 
     # Why did they divide by cos(the) here???
@@ -167,14 +173,20 @@ def modelDerivatives(x, u, quad):
 
     for i in [N, E, S, W]:
         Vr = np.cross(o, D[:, i]) + np.linalg.inv(R_Body2World).dot(v)
-        # mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'])        # Magnitude of mu, planar components
-        mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'] + epsilon)   
-        # lc = Vr[2] / (abs(w[i]) * quad['r'])                            # Non-dimensionalised normal inflow
-        lc = Vr[2] / (abs(w[i]) * quad['r'] + epsilon)                    
-        li = mu                                                         # Non-dimensionalised induced velocity approximation
+        # mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'])            # Magnitude of mu, planar components
+        if abs(w[i]) < epsilon:
+            mu = 0
+        else:
+            mu = np.linalg.norm(Vr[0:2]) / (abs(w[i]) * quad['r'])                  
+        # lc = Vr[2] / (abs(w[i]) * quad['r'])                              # Non-dimensionalised normal inflow
+        if abs(w[i]) < epsilon:
+            lc = 0
+        else:
+            lc = Vr[2] / (abs(w[i]) * quad['r'])                        
+        li = mu                                                             # Non-dimensionalised induced velocity approximation
         alphas = math.atan2(lc, mu)
-        j = math.atan2(Vr[1], Vr[0])                                    # Sideslip azimuth relative to e1 (zero over nose)
-        J = np.array([                                                  # BBF > mu sideslip rotation matrix               
+        j = math.atan2(Vr[1], Vr[0])                                        # Sideslip azimuth relative to e1 (zero over nose)
+        J = np.array([                                                      # BBF > mu sideslip rotation matrix               
             [math.cos(j), -math.sin(j)],
             [math.sin(j), math.cos(j)]
         ])
@@ -184,16 +196,25 @@ def modelDerivatives(x, u, quad):
         #     ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / mu - mu / 2),
         #     0
         # ])
-        beta = np.array([                                               # Longitudal flapping
-            ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / (mu + epsilon) - mu / 2),
-            0
-        ])                                                              
+        if abs(mu) < epsilon:
+            beta = np.array([0, 0])
+        else:
+            beta = np.array([                                           # Longitudal flapping 
+                ((8 / 3 * quad['theta0'] + 2 * quad['theta1']) - 2 * lc) / (1 / mu - mu / 2),
+                0
+            ])                                              
         beta = J.T.dot(beta)                                        # sign(w) * (4/3)*((Ct/sigma)*(2*mu*gamma/3/a)/(1+3*e/2/r) + li)/(1+mu^2/2)]; %Lattitudinal flapping (note sign)
         # a1s[i] = beta[0] - 16 / quad['gamma'] / abs(w[i]) * o[1]    # Rotate the beta flapping angles to longitudinal and lateral coordinates.
-        a1s[i] = beta[0] + 16 / quad['gamma'] / abs(w[i] + epsilon) * o[1]  
+        if abs(w[i]) < epsilon:
+            a1s[i] = beta[0]
+        else:
+            a1s[i] = beta[0] - 16 / quad['gamma'] / abs(w[i]) * o[1]
         # b1s[i] = beta[1] - 16 / quad['gamma'] / abs(w[i]) * o[0]
-        b1s[i] = beta[1] + 16 / quad['gamma'] / abs(w[i] + epsilon) * o[0]   
-        
+        if abs(w[i]) < epsilon:
+            b1s[i] = beta[1]
+        else:
+            b1s[i] = beta[1] - 16 / quad['gamma'] / abs(w[i]) * o[0]
+
         # Fprces and torques
         T[:, i] = quad['Ct'] * quad['rho'] * quad['A'] * quad['r'] ** 2 * w[i] ** 2 * np.array(
             [-math.cos(b1s[i]) * math.sin(a1s[i]), math.sin(b1s[i]), -math.cos(a1s[i]) * math.cos(b1s[i])]
