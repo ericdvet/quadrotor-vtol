@@ -1,7 +1,11 @@
 Traceback (most recent call last):
-  File "/Users/dylanbrown/Documents/GitHub/quadrotor-vtol/ece163/Display/variablePlotter.py", line 76, in _ProcessNewPlotData
-    plotHandle.setData(self.timePoints, dataList)
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pyqtgraph/graphicsItems/PlotDataItem.py", line 747, in setData
-    x = np.array(args[0])
-        ^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pyqtgraph/graphicsItems/AxisItem.py", line 671, in paint
+    specs = self.generateDrawSpecs(painter)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pyqtgraph/graphicsItems/AxisItem.py", line 1188, in generateDrawSpecs
+    textSize = np.sum([r.width() for r in textRects])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pyqtgraph/graphicsItems/AxisItem.py", line 1188, in <listcomp>
+    textSize = np.sum([r.width() for r in textRects])
+                       ^^^^^^^^^
 KeyboardInterrupt

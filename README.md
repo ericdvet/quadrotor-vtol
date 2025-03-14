@@ -16,6 +16,17 @@ Clone the repository. Install necessary dependencies and run:
 python .\QuadrotorSimulate.py
 ```
 
+Enter number indicated for each test (1 for take off, 2 for hover, 3 for landing, 4 for complete test)
+0. Free Mode - This puts the quadcopter in a state that allows for manual adjustment of each motor of the quadcopter.
+1. Take Off - The quadrotor will take off from ground and climb vertically upwards until controls give out.
+2. Hover - Starting at a preset height, the quadrotor will maintain level flight within 0.1m.
+3. Landing - Starting at a preset height, the quadrotor will descend and slow closer to the ground, then drop to the ground.
+4. This combines taking off, hovering for several seconds, then landing (previous 3 modes). This is controlled via a state machine.
+
+Once the mode has been selected, simply press the start button and watch the sim.
+
+## Overview/State of Project
+
 ## Citations
 
 ```
