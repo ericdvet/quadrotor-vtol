@@ -4,7 +4,7 @@ This project is a quadrotor simulation built on top of the UCSC ECE163 UAV Model
 
 ## Group Members
 Eric Vetha (evetha@ucsc.edu)
-Evirpedes Nicolaides (enicolai@ucsc.edu)
+Evirpides Nicolaides (enicolai@ucsc.edu)
 Dylan Brown (dwbrown@ucsc.edu)
 
 ## Features
@@ -22,7 +22,7 @@ python .\QuadrotorSimulate.py
 ```
 
 Enter number indicated for each test (1 for take off, 2 for hover, 3 for landing, 4 for complete test)
-0. Free Mode - This puts the quadcopter in a state that allows for manual adjustment of each motor of the quadcopter.
+0. Free Mode - This puts the quadcopter in a state that allows for manual adjustment of each motor of the quadcopter. (motors 1/3 and motors 2/4 need to be spinning in opposite directions to ascend)
 1. Take Off - The quadrotor will take off from ground and climb vertically upwards until controls give out.
 2. Hover - Starting at a preset height, the quadrotor will maintain level flight within 0.1m.
 3. Landing - Starting at a preset height, the quadrotor will descend and slow closer to the ground, then drop to the ground.
