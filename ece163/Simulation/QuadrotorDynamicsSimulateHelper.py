@@ -19,7 +19,7 @@ class QuadrotorDynamicsSimulateHelper(Simulate.Simulate):
 		
 		if self.mode == 0 or self.mode == 2 or self.mode == 3: # free mode or hover mode
 			self.x = np.array([0, 0, -100, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-		elif self.mode == 1 or self.mode == 4: # take off mode
+		elif self.mode == 1: # take off mode
 			self.x = np.array([0, 0, -0.046, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 		else:
 			exit("Invalid mode")

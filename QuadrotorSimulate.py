@@ -211,7 +211,7 @@ sys.excepthook = my_exception_hook
 
 mode = int(input("Enter '0' for free control, '1' for take-off demo', '2' for hover demo, or '3' for landing demo: "))
 
-if mode < 0 or mode > 4:
+if mode < 0 or mode > 3:
     exit("https://www.wikihow.com/Teach-Yourself-to-Read")
 
 qtApp = QtWidgets.QApplication(sys.argv)
