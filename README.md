@@ -1,5 +1,7 @@
 # quadrotor-vtol
 
+![preview](preview.png)
+
 This project is a quadrotor simulation built on top of the UCSC ECE163 UAV Modeling and Control GUI by Maxwell Dunne and Gabe Elkaim. The simulation models the aerodynamics of an idealized X-4 Flyer II, based on the work of Pounds et al. (cited at the bottom).
 
 ## Group Members
